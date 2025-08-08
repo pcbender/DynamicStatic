@@ -18,18 +18,40 @@ jobs:
       - uses: actions/checkout@v4
         with:
           token: ${{ secrets.AI_REVIEW_PAT || secrets.GITHUB_TOKEN }}
-          
+
+      # GitHub runners use an ephemeral filesystem. Any files written in one
+      # job vanish when the job completes, so we download the previous tracking
+      # ID from a persisted artifact if it exists.
+      - name: Download tracking ID artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: opus-tracking-id
+          path: .
+        continue-on-error: true
+
       - uses: actions/setup-node@v4
         with: { node-version: '20' }
-        
+
       - run: npm ci
-      
+
       - name: Run AI Light Review
         env:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           GITHUB_TOKEN: ${{ secrets.AI_REVIEW_PAT || secrets.GITHUB_TOKEN }}
         run: node scripts/ai-review.js --mode=light
-        
+
+      # Store the current commit SHA so later workflow runs can pick it up.
+      - name: Store tracking ID
+        run: node scripts/OpusProcessor.js --store=${{ github.sha }}
+
+      # Upload the tracking ID so it persists outside this ephemeral runner.
+      - name: Upload tracking ID artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: opus-tracking-id
+          path: tracking-id.txt
+          if-no-files-found: ignore
+
       - name: Commit review history
         run: |
           git config --local user.email "41898282+github-actions[bot]@users.noreply.github.com"
