@@ -44,3 +44,25 @@ function getJob($db, $id) {
     $stmt->execute([$id]);
     return $stmt->fetch(PDO::FETCH_ASSOC);
 }
+
+function getAllJobs($db, $statusList) {
+    if ($statusList === '*') {
+        $stmt = $db->query("SELECT * FROM jobs");
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+    if (is_string($statusList)) {
+        $statusList = array_filter(array_map('trim', explode(',', $statusList)));
+    }
+
+    if (empty($statusList)) {
+        $stmt = $db->query("SELECT * FROM jobs");
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+    $placeholders = implode(',', array_fill(0, count($statusList), '?'));
+    $stmt = $db->prepare("SELECT * FROM jobs WHERE status IN ($placeholders)");
+    $stmt->execute($statusList);
+    return $stmt->fetchAll(PDO::FETCH_ASSOC);
+}
+
