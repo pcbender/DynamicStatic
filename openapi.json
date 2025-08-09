@@ -1,8 +1,8 @@
 {
   "openapi": "3.1.1",
   "info": {
-    "title": "Opus Publisher",
-    "version": "1.0.1"
+    "title": "Dynamic Static Builder API",
+    "version": "1.1.0"
   },
   "servers": [
     {
@@ -10,7 +10,7 @@
     }
   ],
   "paths": {
-    "/api/publish.php": {
+    "/publish": {
       "post": {
         "operationId": "publishArticle",
         "summary": "Publish content to the configured GitHub repository",
@@ -169,7 +169,7 @@
             "description": "Invalid request payload"
           },
           "401": {
-            "description": "Unauthorized \u2013 invalid or expired token"
+            "description": "Unauthorized – invalid or expired token"
           },
           "500": {
             "description": "Server error while publishing"
@@ -177,145 +177,7 @@
         }
       }
     },
-    "/api/getJobStatus.php": {
-      "get": {
-        "operationId": "getJobStatus",
-        "summary": "Get the status of a publishing job",
-        "parameters": [
-          {
-            "name": "id",
-            "in": "query",
-            "required": true,
-            "schema": {
-              "type": "string"
-            },
-            "description": "The unique job ID to check status"
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Job status retrieved successfully",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "id": {
-                      "type": "string"
-                    },
-                    "status": {
-                      "type": "string"
-                    },
-                    "created_at": {
-                      "type": "string",
-                      "format": "date-time"
-                    },
-                    "updated_at": {
-                      "type": "string",
-                      "format": "date-time"
-                    },
-                    "payload": {
-                      "type": "string",
-                      "description": "A JSON string containing job metadata, such as article title, tags, and URL."
-                    }
-                  },
-                  "required": [
-                    "id",
-                    "status",
-                    "created_at",
-                    "updated_at",
-                    "payload"
-                  ]
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Missing or invalid ID"
-          },
-          "404": {
-            "description": "Job not found"
-          },
-          "500": {
-            "description": "Server error while retrieving job status"
-          }
-        }
-      }
-    },
-    "/api/getAllJobs.php": {
-      "post": {
-        "operationId": "getAllJobs",
-        "summary": "Retrieve all jobs filtered by status",
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object",
-                "properties": {
-                  "status": {
-                    "type": "string",
-                    "description": "Comma-separated list of statuses to include, or '*' for all records"
-                  }
-                },
-                "required": [
-                  "status"
-                ]
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Jobs retrieved successfully",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "array",
-                  "items": {
-                    "type": "object",
-                    "properties": {
-                      "id": {
-                        "type": "string"
-                      },
-                      "status": {
-                        "type": "string"
-                      },
-                      "created_at": {
-                        "type": "string",
-                        "format": "date-time"
-                      },
-                      "updated_at": {
-                        "type": "string",
-                        "format": "date-time"
-                      },
-                      "payload": {
-                        "type": "string",
-                        "description": "A JSON string containing job metadata, such as article title, tags, and URL."
-                      }
-                    },
-                    "required": [
-                      "id",
-                      "status",
-                      "created_at",
-                      "updated_at",
-                      "payload"
-                    ]
-                  }
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Missing or invalid status"
-          },
-          "500": {
-            "description": "Server error while retrieving jobs"
-          }
-        }
-      }
-    },
-    "/api/insertJob.php": {
+    "/jobs": {
       "post": {
         "operationId": "insertJob",
         "summary": "Insert a new publishing job with article metadata",
@@ -418,10 +280,136 @@
             "description": "Server error while inserting job"
           }
         }
+      },
+      "get": {
+        "operationId": "getAllJobs",
+        "summary": "Retrieve all jobs filtered by status",
+        "parameters": [
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "description": "Comma-separated list of statuses to include, or * for all records"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Jobs retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "id": {
+                        "type": "string"
+                      },
+                      "status": {
+                        "type": "string"
+                      },
+                      "created_at": {
+                        "type": "string",
+                        "format": "date-time"
+                      },
+                      "updated_at": {
+                        "type": "string",
+                        "format": "date-time"
+                      },
+                      "payload": {
+                        "type": "string",
+                        "description": "A JSON string containing job metadata, such as article title, tags, and URL."
+                      }
+                    },
+                    "required": [
+                      "id",
+                      "status",
+                      "created_at",
+                      "updated_at",
+                      "payload"
+                    ]
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Missing or invalid status"
+          },
+          "500": {
+            "description": "Server error while retrieving jobs"
+          }
+        }
       }
     },
-    "/api/updateJob.php": {
-      "post": {
+    "/jobs/{id}": {
+      "get": {
+        "operationId": "getJobStatus",
+        "summary": "Get the status of a publishing job",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "The unique job ID to check status"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Job status retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string"
+                    },
+                    "status": {
+                      "type": "string"
+                    },
+                    "created_at": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "updated_at": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "payload": {
+                      "type": "string",
+                      "description": "A JSON string containing job metadata, such as article title, tags, and URL."
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "status",
+                    "created_at",
+                    "updated_at",
+                    "payload"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Missing or invalid ID"
+          },
+          "404": {
+            "description": "Job not found"
+          },
+          "500": {
+            "description": "Server error while retrieving job status"
+          }
+        }
+      },
+      "patch": {
         "operationId": "updateJobStatus",
         "summary": "Update the status of an existing publishing job",
         "requestBody": {
@@ -431,15 +419,11 @@
               "schema": {
                 "type": "object",
                 "properties": {
-                  "id": {
-                    "type": "string"
-                  },
                   "status": {
                     "type": "string"
                   }
                 },
                 "required": [
-                  "id",
                   "status"
                 ]
               }
@@ -473,6 +457,43 @@
           },
           "500": {
             "description": "Server error while updating job"
+          }
+        }
+      }
+    },
+    "/jobs/{id}/artifact": {
+      "get": {
+        "operationId": "getJobArtifact",
+        "summary": "Retrieve job payload artifact",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Artifact retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Missing id"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "404": {
+            "description": "Job not found"
           }
         }
       }
