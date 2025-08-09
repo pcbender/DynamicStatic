@@ -17,3 +17,4 @@ Desktop.ini
 .env.local
 
 .github/ai-review-history-local.json
+project-config.json
