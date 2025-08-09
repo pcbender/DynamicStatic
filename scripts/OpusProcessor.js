@@ -1,4 +1,7 @@
 import fs from 'node:fs';
+import path from 'node:path';
+import { marked } from 'marked';
+import simpleGit from 'simple-git';
 
 /**
  * Persists the Opus tracking ID across workflow runs.
@@ -21,6 +24,67 @@ export function readTrackingId(store = DEFAULT_STORE) {
   } catch {
     return null;
   }
+}
+
+/**
+ * Convert a markdown file into HTML using a template and commit the result.
+ *
+ * @param {string} markdownPath - Path to the markdown source file.
+ * @param {string} templatePath - Path to the HTML template file.
+ * @param {object} [options]
+ * @param {string} [options.distDir='dist'] - Directory to write the output HTML.
+ * @param {string} [options.articlesData='dist/data/articles.json'] - Articles metadata file to update.
+ * @param {string} [options.repo='.'] - Path to git repository root.
+ * @returns {Promise<string>} Resolved with the path to the generated HTML file.
+ */
+export async function processMarkdownFile(
+  markdownPath,
+  templatePath,
+  { distDir = 'dist', articlesData = 'dist/data/articles.json', repo = '.' } = {}
+) {
+  const md = fs.readFileSync(markdownPath, 'utf8');
+  const htmlBody = marked.parse(md);
+
+  const template = fs.readFileSync(templatePath, 'utf8');
+  const merged = template.replace(
+    '<!-- Write your article content here. Use IDs on headings to link them to the table of contents. -->',
+    htmlBody
+  );
+
+  const outputName = `${path.basename(markdownPath).replace(/\.md$/, '')}.html`;
+  const outputPath = path.join(distDir, outputName);
+  fs.writeFileSync(outputPath, merged, 'utf8');
+
+  // Update articles metadata
+  let articles = [];
+  try {
+    if (fs.existsSync(articlesData)) {
+      articles = JSON.parse(fs.readFileSync(articlesData, 'utf8'));
+    }
+  } catch (err) {
+    console.warn('Could not read articles data file', err);
+  }
+
+  const titleMatch = md.match(/^#\s+(.*)/);
+  const title = titleMatch ? titleMatch[1].trim() : outputName;
+  const url = `/${outputName}`;
+  const existing = articles.findIndex(a => a.url === url);
+  const entry = { title, url };
+  if (existing >= 0) {
+    articles[existing] = { ...articles[existing], ...entry };
+  } else {
+    articles.push(entry);
+  }
+  try {
+    fs.writeFileSync(articlesData, JSON.stringify(articles, null, 2));
+  } catch (err) {
+    console.warn('Could not update articles data file', err);
+  }
+
+  const git = simpleGit(repo);
+  await git.add([outputPath, articlesData]);
+  await git.commit(`Publish ${outputName} from markdown`);
+  return outputPath;
 }
 
 // Allow running this module directly for simple CLI usage.
