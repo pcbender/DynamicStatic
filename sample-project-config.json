@@ -1,10 +1,9 @@
 {
-  "project": "relational-design-site",
-  "user": "Michael",
-  "repository": "pcbender/RelationalDesign",
-  "branch": "main",
+  "project": "dynamic-static-site",
+  "user": "pcbender",
+  "repository": "pcbender/DynamicStatic",
+  "branch": "michael.rose/working",
   "base_path": "articles/",
-  "github_token": "ghp_xxxxx",
   "base_url": "https://relationaldesign.ai",
   "build_hook": "https://api.example.com/deploy-hook"
 }
