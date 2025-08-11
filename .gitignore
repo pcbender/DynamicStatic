@@ -7,6 +7,7 @@
 
 # Node dependencies
 node_modules/
+**/vendor/
 
 # OS-specific temporary files
 Thumbs.db

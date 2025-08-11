@@ -3,27 +3,23 @@ require_once 'db.php';
 require_once 'auth.php';
 require_once 'github_app.php';
 
-header('Content-Type: application/json');
-
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-    http_response_code(405);
-    echo json_encode(['error' => 'Method not allowed']);
-    exit;
+    json_out(['error' => 'Method not allowed'], 405);
 }
 
-require_oauth();
+$claims = require_bearer();
+require_scope($claims, 'jobs:write');
 
 $input = json_decode(file_get_contents('php://input'), true);
 if (!is_array($input)) {
-    http_response_code(400);
-    echo json_encode(['error' => 'Invalid JSON input']);
-    exit;
+    bad_request('Invalid JSON input');
 }
 if (isset($input['github_token']) || isset($input['payload']['github_token'])) {
-    http_response_code(400);
-    echo json_encode(['error' => 'Use GitHub App flow']);
-    exit;
+    bad_request('Use GitHub App flow');
 }
+
+$input['created_by_sub'] = $claims['sub'] ?? null;
+$input['created_by_email'] = $claims['email'] ?? null;
 
 $result = insertJob($input);
 $dispatched = false;
@@ -42,4 +38,4 @@ try {
     $dispatched = false;
 }
 
-echo json_encode(['status' => 'success', 'job_id' => $result['id'], 'dispatched' => $dispatched]);
+json_out(['status' => 'success', 'job_id' => $result['id'], 'dispatched' => $dispatched]);
