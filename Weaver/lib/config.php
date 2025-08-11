@@ -10,8 +10,22 @@ Dotenv\Dotenv::createImmutable($root)->safeLoad();
 
 function envr($k, $d=null){ $v=getenv($k); return $v!==false?$v:$d; }
 
+/**
+ * Determine the issuer for JWTs.  If WEAVER_ISSUER is not configured
+ * in the environment, fall back to the current request's origin.
+ */
+function weaver_issuer() {
+  $iss = envr('WEAVER_ISSUER');
+  if (!$iss) {
+    $proto = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
+    $host = $_SERVER['HTTP_HOST'] ?? 'localhost';
+    $iss = $proto . '://' . $host;
+  }
+  return $iss;
+}
+
 const REQUIRED_ENVS = [
-  'WEAVER_ISSUER','WEAVER_OAUTH_CLIENT_ID','WEAVER_OAUTH_CLIENT_SECRET',
+  'WEAVER_OAUTH_CLIENT_ID','WEAVER_OAUTH_CLIENT_SECRET',
   'WEAVER_JWT_KID','WEAVER_JWT_PRIVATE_KEY','GOOGLE_CLIENT_ID','GOOGLE_CLIENT_SECRET',
   'GOOGLE_REDIRECT_URI'
 ];
