@@ -4,9 +4,7 @@ if (!file_exists($autoload)) {
     $autoload = __DIR__ . '/../vendor/autoload.php';
 }
 require_once $autoload;
-
-// Load environment variables from the repository root (.env)
-Dotenv\Dotenv::createImmutable(dirname(__DIR__, 2))->safeLoad();
+require_once __DIR__ . '/../lib/config.php';
 
 use Firebase\JWT\JWT;
 use Firebase\JWT\Key;
@@ -48,12 +46,12 @@ function require_bearer(): array {
     }
     $jwt = $m[1];
     try {
-        $claims = JWT::decode($jwt, new Key(getenv('WEAVER_JWT_PRIVATE_KEY'), 'RS256'));
+        $claims = JWT::decode($jwt, new Key(envr('WEAVER_JWT_PRIVATE_KEY'), 'RS256'));
     } catch (Throwable $e) {
         unauthorized('Bad token');
     }
     $claims = (array)$claims;
-    if (($claims['iss'] ?? '') !== getenv('WEAVER_ISSUER')) {
+    if (($claims['iss'] ?? '') !== weaver_issuer()) {
         unauthorized('iss mismatch');
     }
     if (($claims['aud'] ?? '') !== 'weaver-api') {
