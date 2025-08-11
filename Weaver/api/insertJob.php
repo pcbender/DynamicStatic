@@ -1,7 +1,7 @@
 <?php
-require_once 'db.php';
-require_once 'auth.php';
-require_once 'github_app.php';
+require_once __DIR__ . '/db.php';
+require_once __DIR__ . '/auth.php';
+require_once __DIR__ . '/github_app.php';
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     json_out(['error' => 'Method not allowed'], 405);
