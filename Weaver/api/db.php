@@ -1,5 +1,5 @@
 <?php
-function initDb($dbPath = 'jobs.sqlite'): PDO {
+function initDb($dbPath = __DIR__ . '/jobs.sqlite'): PDO {
     $db = new PDO("sqlite:$dbPath");
     $db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
     $db->exec("CREATE TABLE IF NOT EXISTS jobs (
