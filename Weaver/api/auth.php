@@ -5,6 +5,9 @@ if (!file_exists($autoload)) {
 }
 require_once $autoload;
 
+// Load environment variables from the repository root (.env)
+Dotenv\Dotenv::createImmutable(dirname(__DIR__, 2))->safeLoad();
+
 use Firebase\JWT\JWT;
 use Firebase\JWT\Key;
 

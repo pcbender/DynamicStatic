@@ -1,4 +1,9 @@
 <?php
+require_once __DIR__.'/../vendor/autoload.php';
+
+// Load environment variables from the repository root (.env)
+Dotenv\Dotenv::createImmutable(dirname(__DIR__, 2))->safeLoad();
+
 function envr($k, $d=null){ $v=getenv($k); return $v!==false?$v:$d; }
 
 const REQUIRED_ENVS = [
