@@ -1,6 +1,6 @@
 <?php
-require_once 'db.php';
-require_once 'hmac.php';
+require_once __DIR__ . '/db.php';
+require_once __DIR__ . '/hmac.php';
 
 header('Content-Type: application/json');
 

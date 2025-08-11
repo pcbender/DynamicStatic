@@ -7,14 +7,16 @@
 
 # Node dependencies
 node_modules/
+**/vendor/
 
 # OS-specific temporary files
 Thumbs.db
 ehthumbs.db
 Desktop.ini
 
-.env
-.env.local
+**/.env
+**/.env.local
+**/**/*.pem
 
 .github/ai-review-history-local.json
 project-config.json
