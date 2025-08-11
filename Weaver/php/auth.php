@@ -1,57 +1,61 @@
 <?php
-function base64url_decode(string $data): string {
-    $remainder = strlen($data) % 4;
-    if ($remainder) {
-        $padlen = 4 - $remainder;
-        $data .= str_repeat('=', $padlen);
-    }
-    return base64_decode(strtr($data, '-_', '+/'));
+require_once __DIR__ . '/vendor/autoload.php';
+
+use Firebase\JWT\JWT;
+use Firebase\JWT\Key;
+
+function json_out(array $data, int $code = 200): void {
+    http_response_code($code);
+    header('Content-Type: application/json');
+    echo json_encode($data);
+    exit;
 }
 
-function require_oauth(): array {
-    $headers = function_exists('getallheaders') ? getallheaders() : [];
-    $auth = $headers['Authorization'] ?? $headers['authorization'] ?? null;
-    if (!$auth || !preg_match('/^Bearer\s+(\S+)$/i', $auth, $m)) {
-        http_response_code(401);
-        header('Content-Type: application/json');
-        echo json_encode(['error' => 'Unauthorized']);
-        exit;
+function unauthorized(string $msg = 'Unauthorized'): never {
+    json_out(['error' => $msg], 401);
+}
+
+function forbidden(string $msg = 'Forbidden'): never {
+    json_out(['error' => $msg], 403);
+}
+
+function bad_request(string $msg = 'Bad request'): never {
+    json_out(['error' => $msg], 400);
+}
+
+function has_scope(array $claims, string $need): bool {
+    $sc = preg_split('/\s+/', $claims['scope'] ?? '', -1, PREG_SPLIT_NO_EMPTY);
+    return in_array($need, $sc, true) || in_array('admin', $sc, true) || in_array('jobs:admin', $sc, true);
+}
+
+function require_scope(array $claims, string $needed): void {
+    if (!has_scope($claims, $needed)) {
+        forbidden('Insufficient scope');
+    }
+}
+
+function require_bearer(): array {
+    $hdr = $_SERVER['HTTP_AUTHORIZATION'] ?? '';
+    if (!preg_match('/Bearer\s+(\S+)/i', $hdr, $m)) {
+        unauthorized('Missing bearer');
     }
     $jwt = $m[1];
-    $parts = explode('.', $jwt);
-    if (count($parts) < 2) {
-        return ['sub' => 'unknown'];
+    try {
+        $claims = JWT::decode($jwt, new Key(getenv('WEAVER_JWT_PRIVATE_KEY'), 'RS256'));
+    } catch (Throwable $e) {
+        unauthorized('Bad token');
     }
-    $payload = json_decode(base64url_decode($parts[1]), true);
-    if (!is_array($payload)) {
-        $payload = [];
+    $claims = (array)$claims;
+    if (($claims['iss'] ?? '') !== getenv('WEAVER_ISSUER')) {
+        unauthorized('iss mismatch');
     }
-    $iss = getenv('WEAVER_ALLOWED_ISS');
-    if ($iss && ($payload['iss'] ?? null) !== $iss) {
-        http_response_code(401);
-        header('Content-Type: application/json');
-        echo json_encode(['error' => 'Unauthorized']);
-        exit;
+    if (($claims['aud'] ?? '') !== 'weaver-api') {
+        unauthorized('aud mismatch');
     }
-    $aud = getenv('WEAVER_ALLOWED_AUD');
-    if ($aud) {
-        $payloadAud = $payload['aud'] ?? null;
-        if (is_array($payloadAud)) {
-            if (!in_array($aud, $payloadAud, true)) {
-                http_response_code(401);
-                header('Content-Type: application/json');
-                echo json_encode(['error' => 'Unauthorized']);
-                exit;
-            }
-        } elseif ($payloadAud !== $aud) {
-            http_response_code(401);
-            header('Content-Type: application/json');
-            echo json_encode(['error' => 'Unauthorized']);
-            exit;
-        }
+    $typ = $claims['typ'] ?? '';
+    if (!in_array($typ, ['access', 'refresh', ''], true)) {
+        unauthorized('typ mismatch');
     }
-    if (!isset($payload['sub'])) {
-        $payload['sub'] = 'unknown';
-    }
-    return $payload;
+    return $claims;
 }
+?>

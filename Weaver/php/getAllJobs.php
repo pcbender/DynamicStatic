@@ -2,23 +2,23 @@
 require_once 'db.php';
 require_once 'auth.php';
 
-header('Content-Type: application/json');
-
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-    http_response_code(405);
-    echo json_encode(['error' => 'Method not allowed']);
-    exit;
+    json_out(['error' => 'Method not allowed'], 405);
 }
 
-require_oauth();
+$claims = require_bearer();
+require_scope($claims, 'jobs:read');
 
 $db = initDb();
 $data = json_decode(file_get_contents('php://input'), true);
 if (!isset($data['status'])) {
-    http_response_code(400);
-    echo json_encode(['error' => 'Missing status']);
-    exit;
+    bad_request('Missing status');
 }
 
 $jobs = getAllJobs($db, $data['status']);
-echo json_encode($jobs);
+if (!has_scope($claims, 'jobs:admin')) {
+    $jobs = array_values(array_filter($jobs, function($j) use ($claims) {
+        return ($j['created_by_sub'] ?? null) === ($claims['sub'] ?? null);
+    }));
+}
+json_out($jobs);
