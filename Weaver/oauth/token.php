@@ -5,8 +5,9 @@ require_once __DIR__ . '/../lib/http.php';
 use Firebase\JWT\JWT;
 use Firebase\JWT\Key;
 use Weaver\Service\JwtService;
+use Weaver\WeaverConfig;
 
-$config = $GLOBALS['weaverConfig'];
+$config = WeaverConfig::getInstance();
 $jwtService = new JwtService($config);
 
 /**
@@ -38,21 +39,27 @@ try {
         throw new Exception('not auth_code');
     }
 } catch (Throwable $e) {
+    error_log($e->getMessage());
     unauthorized('Invalid code');
 }
 
-$access = $jwtService->sign([
-    'typ' => 'access',
-    'sub' => $claims['sub'],
-    'email' => $claims['email'] ?? null,
-    'scope' => $claims['scope'] ?? 'openid',
-], $config->weaverJwtTtl);
+try {
+    $access = $jwtService->sign([
+        'typ' => 'access',
+        'sub' => $claims['sub'],
+        'email' => $claims['email'] ?? null,
+        'scope' => $claims['scope'] ?? 'openid',
+    ], $config->weaverJwtTtl);
 
-$refresh = $jwtService->sign([
-    'typ' => 'refresh',
-    'sub' => $claims['sub'],
-    'scope' => $claims['scope'] ?? 'openid',
-], $config->weaverRefreshTtl);
+    $refresh = $jwtService->sign([
+        'typ' => 'refresh',
+        'sub' => $claims['sub'],
+        'scope' => $claims['scope'] ?? 'openid',
+    ], $config->weaverRefreshTtl);
+} catch (Throwable $e) {
+    error_log($e->getMessage());
+    server_error('Failed to sign token');
+}
 
 json_out([
     'access_token' => $access,

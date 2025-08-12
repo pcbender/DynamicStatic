@@ -3,6 +3,7 @@ require_once __DIR__ . '/../bootstrap.php';
 
 use Firebase\JWT\JWT;
 use Firebase\JWT\Key;
+use Weaver\WeaverConfig;
 
 function json_out(array $data, int $code = 200): void {
     http_response_code($code);
@@ -40,10 +41,11 @@ function require_bearer(): array {
         unauthorized('Missing bearer');
     }
     $jwt = $m[1];
-    $config = $GLOBALS['weaverConfig'];
+    $config = WeaverConfig::getInstance();
     try {
         $claims = JWT::decode($jwt, new Key($config->weaverJwtPrivateKey, 'RS256'));
     } catch (Throwable $e) {
+        error_log($e->getMessage());
         unauthorized('Bad token');
     }
     $claims = (array)$claims;

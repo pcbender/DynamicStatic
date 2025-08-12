@@ -8,9 +8,8 @@ class WeaverConfigTest extends TestCase
 {
     public function testConfigLoadsFromEnv(): void
     {
-        $this->assertInstanceOf(WeaverConfig::class, $GLOBALS['weaverConfig']);
-        /** @var WeaverConfig $config */
-        $config = $GLOBALS['weaverConfig'];
+        $config = WeaverConfig::getInstance();
+        $this->assertInstanceOf(WeaverConfig::class, $config);
         $this->assertSame('test-client', $config->weaverOauthClientId);
         $this->assertSame('google-client', $config->googleClientId);
     }

@@ -4,8 +4,9 @@ require_once __DIR__ . '/../lib/http.php';
 
 use Weaver\Service\GoogleOAuthService;
 use Weaver\Service\JwtService;
+use Weaver\WeaverConfig;
 
-$config = $GLOBALS['weaverConfig'];
+$config = WeaverConfig::getInstance();
 $oauth = new GoogleOAuthService($config);
 $jwt = new JwtService($config);
 
@@ -31,6 +32,7 @@ if ($gstate['client_id'] !== $config->weaverOauthClientId) {
 try {
     $tok = $oauth->exchangeCode($_GET['code']);
 } catch (Throwable $e) {
+    error_log($e->getMessage());
     server_error('Failed to exchange code');
 }
 $id_token = $tok['id_token'] ?? null;
@@ -41,16 +43,22 @@ if (!$id_token) {
 try {
     $user = $oauth->validateIdToken($id_token);
 } catch (Throwable $e) {
+    error_log($e->getMessage());
     unauthorized($e->getMessage());
 }
 
-$auth_code = $jwt->sign([
-    'typ' => 'auth_code',
-    'sub' => $user->sub,
-    'email' => $user->email,
-    'scope' => $gstate['scope'],
-    'client_id' => $gstate['client_id'],
-], 60);
+try {
+    $auth_code = $jwt->sign([
+        'typ' => 'auth_code',
+        'sub' => $user->sub,
+        'email' => $user->email,
+        'scope' => $gstate['scope'],
+        'client_id' => $gstate['client_id'],
+    ], 60);
+} catch (Throwable $e) {
+    error_log($e->getMessage());
+    server_error('Failed to sign token');
+}
 
 $redir = $gstate['redirect_uri'];
 $qs = http_build_query(['code' => $auth_code, 'state' => $gstate['orig_state'] ?? '']);

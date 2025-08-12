@@ -17,7 +17,8 @@ require_once __DIR__ . '/../bootstrap.php';
 ```
 
 The bootstrap loads the `.env` file, constructs the configuration object and
-makes it available as `$GLOBALS['weaverConfig']` for the rest of the request.
+initializes the configuration singleton. Access it anywhere via
+`Weaver\WeaverConfig::getInstance()`.
 
 ## Services
 

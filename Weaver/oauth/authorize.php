@@ -3,8 +3,9 @@ require_once __DIR__ . '/../bootstrap.php';
 require_once __DIR__ . '/../lib/http.php';
 
 use Weaver\Service\GoogleOAuthService;
+use Weaver\WeaverConfig;
 
-$config = $GLOBALS['weaverConfig'];
+$config = WeaverConfig::getInstance();
 $oauth = new GoogleOAuthService($config);
 
 /**
