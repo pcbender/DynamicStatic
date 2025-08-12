@@ -8,8 +8,9 @@ try {
     $root = dirname(__DIR__);
     $envFile = getenv('WEAVER_ENV_FILE') ?: '.env';
     Dotenv::createImmutable($root, $envFile)->safeLoad();
-    $GLOBALS['weaverConfig'] = WeaverConfig::fromEnvironment();
+    WeaverConfig::getInstance();
 } catch (Throwable $e) {
+    error_log($e->getMessage());
     http_response_code(500);
     header('Content-Type: application/json');
     echo json_encode([

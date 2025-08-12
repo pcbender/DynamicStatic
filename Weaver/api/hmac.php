@@ -1,8 +1,10 @@
 <?php
 require_once __DIR__ . '/../bootstrap.php';
 
+use Weaver\WeaverConfig;
+
 function verify_hmac(string $timestamp, string $body, string $signature): bool {
-    $secret = $GLOBALS['weaverConfig']->weaverHmacSecret;
+    $secret = WeaverConfig::getInstance()->weaverHmacSecret;
     if (!$secret) {
         return false;
     }

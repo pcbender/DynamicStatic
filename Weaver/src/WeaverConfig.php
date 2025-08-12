@@ -33,6 +33,9 @@ class WeaverConfig
     public readonly int $weaverRefreshTtl;
     public readonly ?string $weaverHmacSecret;
 
+    /** @var self|null */
+    private static ?self $instance = null;
+
     private function __construct(
         string $weaverOauthClientId,
         string $weaverOauthClientSecret,
@@ -77,7 +80,15 @@ class WeaverConfig
      *
      * @throws InvalidArgumentException if any required setting is absent.
      */
-    public static function fromEnvironment(): self
+    public static function getInstance(): self
+    {
+        if (self::$instance === null) {
+            self::$instance = self::fromEnvironment();
+        }
+        return self::$instance;
+    }
+
+    private static function fromEnvironment(): self
     {
         $root = self::rootDir();
         if (file_exists($root . '/.env') && empty($_ENV['WEAVER_OAUTH_CLIENT_ID'])) {
