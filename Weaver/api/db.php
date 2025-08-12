@@ -1,4 +1,5 @@
 <?php
+require_once __DIR__ . "/../bootstrap.php";
 function initDb($dbPath = __DIR__ . '/jobs.sqlite'): PDO {
     $db = new PDO("sqlite:$dbPath");
     $db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);

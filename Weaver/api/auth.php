@@ -1,10 +1,5 @@
 <?php
-$autoload = __DIR__ . '/vendor/autoload.php';
-if (!file_exists($autoload)) {
-    $autoload = __DIR__ . '/../vendor/autoload.php';
-}
-require_once $autoload;
-require_once __DIR__ . '/../lib/config.php';
+require_once __DIR__ . '/../bootstrap.php';
 
 use Firebase\JWT\JWT;
 use Firebase\JWT\Key;
@@ -45,13 +40,14 @@ function require_bearer(): array {
         unauthorized('Missing bearer');
     }
     $jwt = $m[1];
+    $config = $GLOBALS['weaverConfig'];
     try {
-        $claims = JWT::decode($jwt, new Key(envr('WEAVER_JWT_PRIVATE_KEY'), 'RS256'));
+        $claims = JWT::decode($jwt, new Key($config->weaverJwtPrivateKey, 'RS256'));
     } catch (Throwable $e) {
         unauthorized('Bad token');
     }
     $claims = (array)$claims;
-    if (($claims['iss'] ?? '') !== weaver_issuer()) {
+    if (($claims['iss'] ?? '') !== $config->weaverIssuer) {
         unauthorized('iss mismatch');
     }
     if (($claims['aud'] ?? '') !== 'weaver-api') {
