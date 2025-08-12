@@ -1,12 +1,5 @@
 <?php
-$autoload = __DIR__ . '/vendor/autoload.php';
-if (!file_exists($autoload)) {
-    $autoload = __DIR__ . '/../vendor/autoload.php';
-}
-require_once $autoload;
-
-// Load environment variables from the repository root (.env)
-Dotenv\Dotenv::createImmutable(dirname(__DIR__, 2))->safeLoad();
+require_once __DIR__ . '/../bootstrap.php';
 
 function base64url_encode(string $data): string {
     return rtrim(strtr(base64_encode($data), '+/', '-_'), '=');

@@ -1,4 +1,8 @@
 <?php
-require_once __DIR__.'/../lib/jwt.php';
+require_once __DIR__ . '/../bootstrap.php';
+
+use Weaver\Service\JwtService;
+
+$jwt = new JwtService($GLOBALS['weaverConfig']);
 header('Content-Type: application/json');
-echo json_encode(['keys'=>[jwk_from_private()]], JSON_UNESCAPED_SLASHES);
+echo json_encode(['keys' => [$jwt->jwkFromPrivate()]], JSON_UNESCAPED_SLASHES);
