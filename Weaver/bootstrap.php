@@ -1,8 +1,26 @@
 <?php
-require_once __DIR__ . '/vendor/autoload.php';
+$autoload = __DIR__ . '/vendor/autoload.php';
+if (file_exists($autoload)) {
+    require_once $autoload;
+}
 
 use Dotenv\Dotenv;
 use Weaver\WeaverConfig;
+
+// Fallback PSR-4 autoloader for Weaver namespace if Composer's autoloader
+// is unavailable or missing project classes.
+spl_autoload_register(function (string $class): void {
+    $prefix = 'Weaver\\';
+    $len = strlen($prefix);
+    if (strncmp($class, $prefix, $len) !== 0) {
+        return; // Not a Weaver class
+    }
+    $relative = substr($class, $len);
+    $file = __DIR__ . '/src/' . str_replace('\\', '/', $relative) . '.php';
+    if (file_exists($file)) {
+        require $file;
+    }
+});
 
 try {
     $root = dirname(__DIR__);
