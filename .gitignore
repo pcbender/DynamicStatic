@@ -16,6 +16,7 @@ Desktop.ini
 
 **/.env
 **/.env.local
+**/.env.production
 **/**/*.pem
 
 .github/ai-review-history-local.json
