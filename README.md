@@ -78,18 +78,22 @@ scripts/                Node.js utilities and tools
   ai-review.js         AI review system for GitHub integration
   Base64Encoding.js    OAuth flow testing utility
   OpusProcessor.js     Content processing and publishing
-Weaver/                 PHP backend services
-  api/                 REST API endpoints
-    auth.php           Authentication and authorization
-    getAllJobs.php     Job listing endpoint
-    insertJob.php      Job creation endpoint
-    publish.php        Content publishing endpoint
-  oauth/               OAuth 2.0 implementation
-    authorize.php      OAuth authorization endpoint
-    google_callback.php Google OAuth callback handler
-    token.php          Token exchange endpoint
-  src/                 Core PHP classes
-    Service/           Service layer (OAuth, JWT)
+Weaver/                 Multi-language backend services
+  README.md            Multi-language implementation guide
+  php/                 PHP implementation (production ready)
+    api/               REST API endpoints
+      auth.php         Authentication and authorization
+      getAllJobs.php   Job listing endpoint
+      insertJob.php    Job creation endpoint
+      publish.php      Content publishing endpoint (deprecated)
+    oauth/             OAuth 2.0 implementation
+      authorize.php    OAuth authorization endpoint
+      google_callback.php Google OAuth callback handler
+      token.php        Token exchange endpoint
+    src/               Core PHP classes
+      Service/         Service layer (OAuth, JWT)
+  node/                Node.js implementation (planned)
+  dotnet/              .NET implementation (planned)
 openapi.json           API specification for GPT integration
 run-local.*            Helper scripts for different platforms
 ```

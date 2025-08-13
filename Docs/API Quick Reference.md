@@ -19,6 +19,7 @@ Cantor (Human) ↔ Echo (AI GPT) ↔ Weaver (API Gateway) ↔ Opus (GitHub DevOp
 
 ## General Notes
 - **Base URL**: https://webbness.net/api/
+- **Implementation**: Multiple language options available (PHP, Node.js, .NET)
 - **Authentication**: Bearer JWT tokens via OAuth 2.0 flow
 - **Authorization**: Scope-based permissions (`jobs:read`, `jobs:write`, `jobs:admin`)
 - **Job States**: `pending`, `publishing`, `merging`, `waiting`, `actionrequired`, `building`, `live`, `error`, `cancel`, `cancelled`, `stale`
