@@ -18,20 +18,24 @@ The following GitHub Actions workflows are automatically deployed from `.github/
 **Purpose**: Automatically processes new articles dispatched from Weaver
 **Trigger**: Repository dispatch event `dsb.new_article`
 **Scripts Used**: `scripts/render.js`
+**Output**: Adds new article files to `dist/articles/` or `dist/posts/`
 **Flow**:
 1. Receives job ID from Weaver via repository dispatch
 2. Fetches article content from Weaver API
 3. Renders article using `scripts/render.js`
-4. Creates pull request with new content
+4. Writes article files to `dist/` directory
+5. Creates pull request with new content
 
 ### 2. Build Site (`build-site.yml`)
 **Purpose**: Builds the static site when content changes
 **Trigger**: Push/PR to content or dist directories
 **Scripts Used**: `npm run build:site` (references root package.json)
+**Output**: Generates/updates files in `dist/` directory
 **Flow**:
 1. Sets up Node.js environment
 2. Installs dependencies
 3. Runs site build process
+4. Outputs built site to `dist/` folder
 
 ### 3. AI Light Review (`ai-review.yml`)
 **Purpose**: Provides automated AI code review on pull requests
@@ -47,22 +51,25 @@ The following GitHub Actions workflows are automatically deployed from `.github/
 **Purpose**: Comprehensive AI review for releases and tags
 **Trigger**: Release creation, tag pushes, manual dispatch
 **Scripts Used**: External validation tools + `scripts/ai-review.js` (deep mode)
+**Analysis Target**: Built `dist/` directory and source files
 **Flow**:
-1. Builds the site
+1. Builds the site (populates `dist/` folder)
 2. Validates JSON schemas
-3. Performs link checking
-4. Runs HTML validation
-5. Executes Lighthouse performance audit
+3. Performs link checking on `dist/` HTML files
+4. Runs HTML validation on `dist/` content
+5. Executes Lighthouse performance audit on `dist/` served locally
 6. Conducts deep AI analysis
 
 ### 5. Deploy (`main.yml`)
 **Purpose**: Deploys built site to production via rsync
 **Trigger**: Push to main branch or manual dispatch
 **Scripts Used**: Built-in rsync commands
+**Source**: `dist/` directory contents
 **Flow**:
 1. Installs SSH tools
 2. Establishes secure connection
-3. Synchronizes dist/ folder to remote server
+3. Synchronizes `dist/` folder contents to remote server
+4. Mirrors entire `dist/` directory structure to production
 
 ## GitHub Secrets Setup
 
@@ -104,9 +111,66 @@ Configure the following repository variables (`Settings > Secrets and variables 
 REMOTE_PATH=/path/to/your/site/directory
 ```
 
-## Setup Instructions
+## Build and Deployment Pipeline
 
-### 1. Fork/Clone Repository
+### Content-to-Deployment Flow
+1. **Content Creation**: Cantor creates content through Echo (Custom GPT)
+2. **Job Creation**: Echo submits job to Weaver API
+3. **Article Processing**: Opus receives dispatch → `scripts/render.js` → writes to `dist/`
+4. **Site Building**: Content changes trigger build → updates `dist/` directory
+5. **Deployment**: Main branch pushes → `dist/` contents deployed to production
+
+### Local Development
+```bash
+# Install dependencies
+npm install
+
+# Build site locally
+npm run build:site
+
+# Serve dist/ folder locally for testing
+npx http-server ./dist -p 8080
+```
+
+### Build Triggers
+- **Manual Build**: `npm run build:site`
+- **Content Changes**: Push/PR to `dist/`, `content/` directories
+- **Article Processing**: Repository dispatch from Weaver
+- **Release Build**: Tag creation or release publication
+
+## New User Setup Flow
+
+For a new Dynamic Static user via the Custom GPT, the setup process is streamlined:
+
+### 1. Fork Repository
+```bash
+# User forks the GitHub repository from the Custom GPT interface
+# or manually via GitHub web interface
+```
+
+### 2. Configure GitHub Secrets
+Set up the required secrets as documented in the "GitHub Secrets Setup" section below.
+
+### 3. Deploy Web Server
+Copy the contents of the `dist/` folder to their web server:
+```bash
+# Simple deployment - just copy dist/ contents
+cp -r dist/* /var/www/html/
+# or upload via FTP, rsync, etc.
+```
+
+### 4. Ready to Create
+The system is immediately ready - no databases to configure, no complex setup. The welcome page in `dist/index.html` explains how everything works.
+
+### Clean Starting Point
+The `dist/` folder provides a clean "Welcome to Dynamic Static AI CMS" page that:
+- Explains the four-actor architecture
+- Demonstrates automatic metadata management  
+- Shows how JSON files update automatically
+- Provides clear next steps for content creation
+- Emphasizes the "no database, no muss or fuss" philosophy
+
+## Setup Instructions
 ```bash
 git clone https://github.com/your-username/DynamicStatic.git
 cd DynamicStatic
@@ -196,6 +260,16 @@ git push origin main
 5. Test changes in feature branch before merging
 
 ## File Organization
+
+### Build Output Directory
+- `dist/` - **Built static site ready for deployment**
+  - `dist/index.html` - Main site homepage
+  - `dist/articles/` - Generated article pages
+  - `dist/posts/` - Generated blog posts
+  - `dist/css/` - Compiled stylesheets
+  - `dist/img/` - Optimized images and assets
+  - `dist/data/` - JSON data files for dynamic content
+  - `dist/favicon.ico` - Site favicon
 
 ### Workflow Files (Auto-deployed)
 - `.github/workflows/*.yml` - GitHub Actions workflows (automatically deployed when pushed)
