@@ -78,6 +78,11 @@ scripts/                Node.js utilities and tools
   ai-review.js         AI review system for GitHub integration
   Base64Encoding.js    OAuth flow testing utility
   OpusProcessor.js     Content processing and publishing
+GPT/                    Custom GPT (Echo) configuration
+  Configuration.md     GPT instructions and behavior definition
+  openapi.json         API specification for Weaver integration
+  project-config.json  Default project settings for publishing
+  README.md            Echo setup and configuration guide
 Weaver/                 Multi-language backend services
   README.md            Multi-language implementation guide
   php/                 PHP implementation (production ready)
@@ -94,7 +99,6 @@ Weaver/                 Multi-language backend services
       Service/         Service layer (OAuth, JWT)
   node/                Node.js implementation (planned)
   dotnet/              .NET implementation (planned)
-openapi.json           API specification for GPT integration
 run-local.*            Helper scripts for different platforms
 ```
 

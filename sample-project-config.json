@@ -1,9 +1,0 @@
-{
-  "project": "dynamic-static-site",
-  "user": "pcbender",
-  "repository": "pcbender/DynamicStatic",
-  "branch": "michael.rose/working",
-  "base_path": "articles/",
-  "base_url": "https://relationaldesign.ai",
-  "build_hook": "https://api.example.com/deploy-hook"
-}
