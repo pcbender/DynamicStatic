@@ -1,10 +1,10 @@
 <!DOCTYPE html>
-<html lang="en"
+<html lang="en">
 
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Your Website - Modern & Dynamic</title>
+    <title>Welcome to Dynamic Static AI CMS</title>
     <script defer src="https://cdnjs.cloudflare.com/ajax/libs/alpinejs/3.13.3/cdn.min.js"></script>
     <link rel="stylesheet" href="css/styles.css">
 </head>
@@ -16,7 +16,7 @@
     }">
         <nav x-data="{ navigation: [] }"
             x-init="fetch('data/menu.json').then(r => r.json()).then(data => navigation = data)">
-            <div class="logo"><a href="index.html"><img src="img/TriGram.png" alt="Logo" />Relational Design</a></div>
+            <div class="logo"><a href="index.html"><img src="img/TriGram.png" alt="Logo" />Dynamic Static</a></div>
 
             <!-- Desktop Menu -->
             <ul class="nav-menu">
@@ -53,31 +53,19 @@
     <!-- Hero Section -->
     <section class="hero" id="hero">
         <div class="hero-content">
-
-            <h1>Relational Design</h1>
-            <h2>Why You Care.</h2>
+            <h1>Welcome to Dynamic Static AI CMS</h1>
+            <h2>Content Creation Simplified</h2>
             <p>
-                A new creative era is emerging—one where humans and AI don’t just interact, but co-create in real time.
+                Your new AI-powered content management system is ready to go. No databases, no complexity—just 
+                intelligent content creation with AI co-creation.
             </p>
             <p>
-                We're told to be wary of AI's unpredictability. We want our tools to be reliable, like calculators.
-                <strong>But this fundamentally misunderstands the assignment.</strong>
-            </p>
-            <p>
-                The true power of generative AI isn't in giving the same answer every time—it’s in its ability to show
-                you
-                an answer you never thought to ask for.
-            </p>
-            <p>
-                Relational Design is the practice at the heart of this shift. It’s how we move from demanding
-                predictability
-                to
-                cultivating possibility.
+                <strong>You've successfully set up Dynamic Static!</strong> This page demonstrates how the system works:
+                metadata, navigation, and content are all automatically managed through simple JSON files and static HTML.
             </p>
             <blockquote>
-                <strong>"History's greatest breakthroughs were born from happy accidents, not rigid expectations.
-                    We can now design for that serendipity by inviting space in our AI interactions and embracing the
-                    unexpected."</strong>
+                <strong>"Create content with AI, deploy with confidence. 
+                Everything you need is right here in this repository."</strong>
             </blockquote>
         </div>
     </section>
@@ -85,131 +73,200 @@
     <!-- Main Content -->
     <main>
         <div class="article-body">
-            <section id="what-is">
-                <h2>What is Relational Design?</h2>
+            <section id="how-it-works">
+                <h2>How Dynamic Static Works</h2>
                 <p>
-                    It’s not just prompt engineering. It’s not just automation. It’s a new design language for a new
-                    kind of
-                    collaboration,
-                    built on a few core principles:
+                    Dynamic Static AI CMS uses a four-actor architecture to transform content creation:
                 </p>
                 <ul>
-                    <li><strong>Stateful Dialogue:</strong> Moving beyond single prompts to conversations that have
-                        memory,
-                        context, and evolve over time. The AI remembers what you've worked on together.</li>
-                    <li><strong>Intent Adaptation:</strong> Building systems that infer underlying intent and ask
-                        clarifying
-                        questions, rather than just executing literal commands.</li>
-                    <li><strong>Embracing Variance:</strong> Channeling the AI's non-deterministic nature as a feature,
-                        not
-                        a bug, to unlock novel ideas and generative insights.</li>
-                    <li><strong>Reciprocal Feedback:</strong> Designing loops where both the human and the AI can guide,
-                        correct, and teach each other, improving the partnership with every interaction.</li>
+                    <li><strong>Cantor:</strong> You, the content creator and site owner</li>
+                    <li><strong>Echo:</strong> AI co-creator (OpenAI Custom GPT) that helps generate content</li>
+                    <li><strong>Weaver:</strong> Backend service managing authentication and job processing</li>
+                    <li><strong>Opus:</strong> DevOps automation handling builds and deployments</li>
+                </ul>
+
+                <h3>No Database Required</h3>
+                <p>
+                    Everything is stored in static files and JSON data. When you create content through the Custom GPT,
+                    it automatically:
+                </p>
+                <ul>
+                    <li>Generates HTML pages in the <code>articles/</code> or <code>posts/</code> directories</li>
+                    <li>Updates navigation menus in <code>data/menu.json</code></li>
+                    <li>Manages page metadata and relationships</li>
+                    <li>Triggers automatic site rebuilds</li>
+                </ul>
+
+                <h3>Automatic Metadata Management</h3>
+                <p>
+                    Every time your site builds, the system automatically:
+                </p>
+                <ul>
+                    <li><strong>Scans content:</strong> Reads all HTML and Markdown files</li>
+                    <li><strong>Extracts metadata:</strong> Titles, descriptions, tags, and relationships</li>
+                    <li><strong>Updates JSON files:</strong> Navigation, search indices, and content catalogs</li>
+                    <li><strong>Optimizes delivery:</strong> Generates fast, static assets</li>
                 </ul>
             </section>
 
-            <hr>
+            <section id="getting-started">
+                <h2>Getting Started</h2>
+                <p>You've already completed the hard part! Here's what you've set up:</p>
+                
+                <h3>✅ Repository Forked</h3>
+                <p>You have your own copy of the Dynamic Static codebase</p>
+                
+                <h3>✅ GitHub Configured</h3>
+                <p>Workflows are active and ready to process content</p>
+                
+                <h3>✅ Web Server Running</h3>
+                <p>You're viewing this page, so your server is working!</p>
 
-            <section id="audiences">
-                <h3>If you're a developer…</h3>
-                <p>
-                    You build systems designed for predictable outputs. But what if your next interface isn’t a GUI or
-                    CLI—but a conversation that embraces variance?
-                </p>
-                <p>
-                    Relational Design offers the patterns to harness, not just constrain, the model’s generative power.
-                    It
-                    moves beyond treating the AI like a stateless API call that must always return <code>$X$</code>,
-                    and toward a stateful partner where the interaction <code>Human ⊕ AI</code> can lead to a universe
-                    of
-                    valuable outcomes: <code>{Y₁, Y₂, Z₁, …}</code>.
-                </p>
-                <p>
-                    This is prompt-as-protocol. <strong>It’s turning the <code>temperature</code> dial from a bug to a
-                        feature.</strong> It’s how you build systems that don’t just respond—they surprise, innovate,
-                    and
-                    relate.
-                </p>
+                <h3>Next Steps:</h3>
+                <ol>
+                    <li><strong>Configure the Custom GPT:</strong> Use the instructions in <code>GPT/Configuration.md</code></li>
+                    <li><strong>Set up Weaver:</strong> Deploy the backend service for authentication</li>
+                    <li><strong>Create content:</strong> Start writing through the AI co-creator</li>
+                    <li><strong>Watch it work:</strong> Content automatically appears on your site</li>
+                </ol>
+            </section>
 
-                <h3>If you're a creative…</h3>
+            <section id="example-content">
+                <h2>This Page is an Example</h2>
                 <p>
-                    You’re not just using AI—you’re jamming with it. You know inspiration doesn't come from a formula;
-                    it's
-                    born from the happy accident. Why would we demand our most powerful creative partner be a
-                    predictable
-                    machine?
+                    This welcome page demonstrates Dynamic Static in action:
                 </p>
+                <ul>
+                    <li><strong>Static HTML:</strong> Fast loading, no server processing needed</li>
+                    <li><strong>Dynamic Features:</strong> Alpine.js provides interactive navigation</li>
+                    <li><strong>JSON Data:</strong> Menu items loaded from <code>data/menu.json</code></li>
+                    <li><strong>Automatic Builds:</strong> Any content changes trigger regeneration</li>
+                </ul>
+                
                 <p>
-                    Relational Design offers a framework to lean into the AI's generative nature. It helps you create
-                    the
-                    conditions for serendipity, moving beyond one-shot prompts into a flowstate where the technology's
-                    “unpredictability” becomes the engine of your creativity. This is about resonance, not control.
+                    When you create your first article through the Custom GPT, you'll see:
                 </p>
+                <ul>
+                    <li>New HTML file appears in <code>articles/</code></li>
+                    <li>Navigation menu automatically updates</li>
+                    <li>Site search index refreshes</li>
+                    <li>All without touching a database</li>
+                </ul>
+            </section>
 
-                <h3>If you're a C-Level visionary…</h3>
+            <section id="file-structure">
+                <h2>Understanding the File Structure</h2>
+                <div class="code-block">
+                    <pre><code>dist/                    # Built site (this folder)
+├── index.html          # This welcome page
+├── articles/           # Generated article pages
+├── posts/             # Generated blog posts  
+├── css/               # Compiled stylesheets
+├── img/               # Optimized images
+├── data/              # JSON data files
+│   ├── menu.json      # Navigation structure
+│   ├── articles.json  # Article metadata
+│   └── search.json    # Search index
+└── favicon.ico        # Site icon</code></pre>
+                </div>
+                
                 <p>
-                    Your competitors are trying to force AI into a predictable box, using it for mere optimization. This
-                    is
-                    a failure of imagination.
-                </p>
-                <p>
-                    True breakthroughs don’t come from predictable roadmaps; they come from generative insights.
-                    Relational
-                    Design is the cultural and technical shift that unlocks this potential, creating an environment
-                    where
-                    teams
-                    partner with AI to discover novel solutions and uncover unseen opportunities.
-                </p>
-                <p>
-                    This isn't adoption. It’s alignment with the true, inventive nature of AI. It’s how the future gets
-                    built—with human intention and machine resonance, together.
+                    <strong>Key Point:</strong> You rarely edit files in <code>dist/</code> directly. 
+                    Content creation happens through the AI co-creator, which automatically 
+                    generates and places files in the correct locations.
                 </p>
             </section>
 
-            <hr>
-
-            <section id="cta">
-                <h2>Join the Movement</h2>
+            <section id="how-metadata-works">
+                <h2>How Automatic Metadata Works</h2>
                 <p>
-                    Be the first to get access to our whitepaper, case studies, and community.
+                    The magic of Dynamic Static is in its automatic metadata management. Every time your site builds:
                 </p>
-                <button onclick="location.href='GetStarted.html'"
-                    onmouseover="this.innerText='It starts with a conversation.'"
-                    onmouseout="this.innerText='Request an Invitation';">
-                    Request an Invitation
-                </button>
+                
+                <h3>Page-Level Metadata</h3>
+                <ul>
+                    <li><strong>Title extraction:</strong> From <code>&lt;h1&gt;</code> tags or <code>&lt;title&gt;</code></li>
+                    <li><strong>Description generation:</strong> From first paragraph or meta tags</li>
+                    <li><strong>Tag detection:</strong> From content analysis and explicit tagging</li>
+                    <li><strong>Date tracking:</strong> Creation and modification timestamps</li>
+                </ul>
+
+                <h3>JSON File Updates</h3>
+                <ul>
+                    <li><strong>menu.json:</strong> Navigation structure automatically updated</li>
+                    <li><strong>articles.json:</strong> Full article metadata catalog</li>
+                    <li><strong>search.json:</strong> Search index with content snippets</li>
+                    <li><strong>tags.json:</strong> Tag relationships and counts</li>
+                    <li><strong>sitemap.json:</strong> Site structure for SEO</li>
+                </ul>
+
+                <h3>Content Relationships</h3>
+                <p>
+                    The system automatically detects and maintains relationships between content:
+                </p>
+                <ul>
+                    <li><strong>Related articles:</strong> Based on shared tags and topics</li>
+                    <li><strong>Series detection:</strong> Multi-part content automatically linked</li>
+                    <li><strong>Category organization:</strong> Content grouped by subject matter</li>
+                    <li><strong>Cross-references:</strong> Internal links tracked and validated</li>
+                </ul>
+            </section>
+
+            <section id="next-steps">
+                <h2>Ready to Create Content?</h2>
+                <p>
+                    Your Dynamic Static AI CMS is ready! The system is designed to be:
+                </p>
+                <ul>
+                    <li><strong>Simple:</strong> No databases or complex infrastructure</li>
+                    <li><strong>Fast:</strong> Static files served directly from your web server</li>
+                    <li><strong>Intelligent:</strong> AI handles content creation and organization</li>
+                    <li><strong>Automated:</strong> Builds and deploys happen automatically</li>
+                </ul>
+                
+                <p>
+                    Start creating content through your Custom GPT, and watch as your site 
+                    grows and evolves automatically. Welcome to the future of content management!
+                </p>
             </section>
         </div>
 
-        <!-- Recent Updates Section -->
-        <section class="section" id="updates" x-data="{ 
-            updates: [],
-            loading: false,
-            formatDate(dateString) {
-                return new Date(dateString).toLocaleDateString('en-US', {
-                    year: 'numeric',
-                    month: 'long',
-                    day: 'numeric'
-                });
-            }
-        }" x-init="fetch('data/recentUpdates.json').then(r => r.json()).then(data => updates = data)">
-            <h2>Recent Updates</h2>
-            <div class="updates-grid" :class="loading ? 'loading' : ''">
-                <template x-for="update in updates" :key="update.id">
-                    <article class="update-card fade-in">
-                        <div class="update-date" x-text="formatDate(update.date)"></div>
-                        <h3 class="update-title" x-text="update.title"></h3>
-                        <p class="update-excerpt" x-text="update.excerpt"></p>
-                    </article>
-                </template>
-            </div>
-        </section>
-
         <!-- Features Section -->
         <section class="section" id="features" x-data="{ 
-            features: [] 
-        }" x-init="fetch('data/features.json').then(r => r.json()).then(data => features = data)">
-            <h2>Features</h2>
+            features: [
+                {
+                    icon: '🤖',
+                    title: 'AI Co-Creation',
+                    description: 'Work with AI to create compelling content through natural conversation'
+                },
+                {
+                    icon: '⚡',
+                    title: 'Zero Database',
+                    description: 'Pure static files. Fast, secure, and infinitely scalable'
+                },
+                {
+                    icon: '🔄',
+                    title: 'Auto Metadata',
+                    description: 'Page metadata and JSON files update automatically on every build'
+                },
+                {
+                    icon: '🚀',
+                    title: 'Auto Deploy',
+                    description: 'GitHub Actions handle building and deployment automatically'
+                },
+                {
+                    icon: '🎯',
+                    title: 'Smart Organization',
+                    description: 'Content relationships and navigation managed intelligently'
+                },
+                {
+                    icon: '💡',
+                    title: 'No Muss, No Fuss',
+                    description: 'Just create content. Everything else happens automatically.'
+                }
+            ]
+        }">
+            <h2>Why Dynamic Static?</h2>
             <div class="features-grid">
                 <template x-for="feature in features" :key="feature.title">
                     <div class="feature-card fade-in">
@@ -223,19 +280,43 @@
 
         <!-- About Section -->
         <section class="section" id="about">
-            <h2>About Us</h2>
+            <h2>The Four-Actor Architecture</h2>
             <div style="text-align: center; max-width: 800px; margin: 0 auto;">
                 <p style="font-size: 1.1rem; color: var(--text-light); line-height: 1.8;">
-                    We create modern, efficient websites using the latest web technologies.
-                    Our approach combines clean HTML5 structure, beautiful CSS3 styling,
-                    and dynamic Alpine.js functionality to deliver exceptional user experiences.
+                    Dynamic Static uses a four-actor system inspired by Relational Design principles.
+                    Each actor has a specific role, and together they create a seamless content-to-deployment pipeline
+                    that requires minimal human intervention while maintaining full creative control.
                 </p>
             </div>
         </section>
     </main>
 
     <!-- Footer -->
-    <footer x-data="{ sections: [] }" x-init="fetch('data/footer.json').then(r => r.json()).then(data => sections = data)">
+    <footer x-data="{ sections: [
+        {
+            title: 'Dynamic Static',
+            items: [
+                { name: 'Documentation', href: 'https://github.com/your-repo/DynamicStatic' },
+                { name: 'Custom GPT Setup', href: 'GPT/Configuration.md' },
+                { name: 'Weaver Backend', href: 'Weaver/README.md' }
+            ]
+        },
+        {
+            title: 'Resources',
+            items: [
+                { name: 'Getting Started', href: '#getting-started' },
+                { name: 'File Structure', href: '#file-structure' },
+                { name: 'How It Works', href: '#how-it-works' }
+            ]
+        },
+        {
+            title: 'Support',
+            items: [
+                { name: 'GitHub Issues', href: 'https://github.com/your-repo/DynamicStatic/issues' },
+                { name: 'Opus README', href: 'Opus/Readme.md' }
+            ]
+        }
+    ] }">
         <div class="footer-content">
             <template x-for="section in sections" :key="section.title">
                 <div class="footer-section">
@@ -247,7 +328,7 @@
             </template>
         </div>
         <div class="footer-bottom" x-data="{currentYear: new Date().getFullYear()}">
-            <p>&copy; <span x-text="currentYear"></span> Relational Design. All rights reserved.</p>
+            <p>&copy; <span x-text="currentYear"></span> Dynamic Static AI CMS. Ready to create!</p>
         </div>
     </footer>
 </body>

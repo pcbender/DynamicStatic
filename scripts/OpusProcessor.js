@@ -27,9 +27,10 @@ export function readTrackingId(store = DEFAULT_STORE) {
 }
 
 /**
- * Convert a markdown file into HTML using a template and commit the result.
+ * Convert a ContentJobPayload into HTML using a template and commit the result.
+ * This function works with the structured payload format from the OpenAPI spec.
  *
- * @param {string} markdownPath - Path to the markdown source file.
+ * @param {object} payload - ContentJobPayload object with metadata, content, deployment config
  * @param {string} templatePath - Path to the HTML template file.
  * @param {object} [options]
  * @param {string} [options.distDir='dist'] - Directory to write the output HTML.
@@ -37,25 +38,57 @@ export function readTrackingId(store = DEFAULT_STORE) {
  * @param {string} [options.repo='.'] - Path to git repository root.
  * @returns {Promise<string>} Resolved with the path to the generated HTML file.
  */
-export async function processMarkdownFile(
-  markdownPath,
+export async function processContentPayload(
+  payload,
   templatePath,
   { distDir = 'dist', articlesData = 'dist/data/articles.json', repo = '.' } = {}
 ) {
-  const md = fs.readFileSync(markdownPath, 'utf8');
-  const htmlBody = marked.parse(md);
+  // Validate payload structure
+  if (!payload.metadata || !payload.content || !payload.deployment) {
+    throw new Error('Invalid payload: missing required fields (metadata, content, deployment)');
+  }
+
+  let htmlBody;
+  if (payload.content.format === 'html') {
+    htmlBody = payload.content.body;
+  } else {
+    // Default to markdown
+    htmlBody = marked.parse(payload.content.body);
+  }
 
   const template = fs.readFileSync(templatePath, 'utf8');
-  const merged = template.replace(
-    '<!-- Write your article content here. Use IDs on headings to link them to the table of contents. -->',
-    htmlBody
-  );
+  
+  // Handle multiple template replacement patterns
+  let merged = template;
+  
+  // New template format with placeholders
+  merged = merged
+    .replace(/\{\{title\}\}/g, payload.metadata.title)
+    .replace(/\{\{content\}\}/g, htmlBody)
+    .replace(/\{\{description\}\}/g, payload.metadata.description || '')
+    .replace(/\{\{author\}\}/g, payload.metadata.author || '');
+  
+  // Legacy template format for backward compatibility
+  if (merged.includes('<!-- Write your article content here')) {
+    merged = merged.replace(
+      /<!-- Write your article content here[^>]*-->/,
+      htmlBody
+    );
+  }
 
-  const outputName = `${path.basename(markdownPath).replace(/\.md$/, '')}.html`;
-  const outputPath = path.join(distDir, outputName);
+  const contentType = payload.type || 'articles';
+  const filename = payload.deployment.filename;
+  
+  // Ensure target directory exists
+  const outputDir = path.join(distDir, contentType);
+  if (!fs.existsSync(outputDir)) {
+    fs.mkdirSync(outputDir, { recursive: true });
+  }
+  
+  const outputPath = path.join(outputDir, filename);
   fs.writeFileSync(outputPath, merged, 'utf8');
 
-  // Update articles metadata
+  // Update articles metadata with structured data
   let articles = [];
   try {
     if (fs.existsSync(articlesData)) {
@@ -65,16 +98,24 @@ export async function processMarkdownFile(
     console.warn('Could not read articles data file', err);
   }
 
-  const titleMatch = md.match(/^#\s+(.*)/);
-  const title = titleMatch ? titleMatch[1].trim() : outputName;
-  const url = `/${outputName}`;
+  const url = `/${contentType}/${filename}`;
+  const articleData = {
+    title: payload.metadata.title,
+    url,
+    description: payload.metadata.description || payload.content.excerpt || '',
+    tags: payload.metadata.tags || [],
+    category: payload.metadata.category || contentType,
+    author: payload.metadata.author || '',
+    publishDate: payload.metadata.publishDate || new Date().toISOString()
+  };
+  
   const existing = articles.findIndex(a => a.url === url);
-  const entry = { title, url };
   if (existing >= 0) {
-    articles[existing] = { ...articles[existing], ...entry };
+    articles[existing] = { ...articles[existing], ...articleData };
   } else {
-    articles.push(entry);
+    articles.push(articleData);
   }
+  
   try {
     fs.writeFileSync(articlesData, JSON.stringify(articles, null, 2));
   } catch (err) {
@@ -83,8 +124,45 @@ export async function processMarkdownFile(
 
   const git = simpleGit(repo);
   await git.add([outputPath, articlesData]);
-  await git.commit(`Publish ${outputName} from markdown`);
+  await git.commit(`Publish ${filename} - ${payload.metadata.title}`);
   return outputPath;
+}
+
+/**
+ * Legacy function: Convert a markdown file into HTML using a template and commit the result.
+ * @deprecated Use processContentPayload for new structured payloads
+ */
+export async function processMarkdownFile(
+  markdownPath,
+  templatePath,
+  { distDir = 'dist', articlesData = 'dist/data/articles.json', repo = '.' } = {}
+) {
+  const md = fs.readFileSync(markdownPath, 'utf8');
+  
+  // Convert legacy markdown to ContentJobPayload format for consistency
+  const titleMatch = md.match(/^#\s+(.*)/);
+  const title = titleMatch ? titleMatch[1].trim() : path.basename(markdownPath, '.md');
+  const outputName = `${path.basename(markdownPath).replace(/\.md$/, '')}.html`;
+  
+  const payload = {
+    type: 'articles',
+    metadata: {
+      title,
+      description: '',
+      tags: [],
+      template: 'article-template'
+    },
+    content: {
+      format: 'markdown',
+      body: md
+    },
+    deployment: {
+      repository: 'legacy/conversion',
+      filename: outputName
+    }
+  };
+  
+  return processContentPayload(payload, templatePath, { distDir, articlesData, repo });
 }
 
 // Allow running this module directly for simple CLI usage.
