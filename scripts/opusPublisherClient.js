@@ -4,16 +4,28 @@ import process from 'node:process';
  * Minimal client for the Opus Publisher API endpoints used by GitHub workflows.
  *
  * Implements the endpoints documented in openapi.json:
- * - POST /api/insertJob.php
- * - GET  /api/getJobStatus.php
- * - POST /api/updateJob.php
- *
- * The publish.php endpoint is intentionally omitted.
+ * - POST /jobs (insertJob)
+ * - POST /jobs/list (getAllJobs)
+ * - GET  /jobs/{id} (getJobStatus)
+ * - POST /jobs/update (updateJobStatus)
+ * - GET  /jobs/{id}/artifact (getJobArtifact)
  *
  * Usage:
  *   import { insertJob, getJobStatus, updateJobStatus } from './scripts/opusPublisherClient.js';
  *
- *   const job = await insertJob({ id: '123', status: 'queued', created_at: new Date().toISOString(), updated_at: new Date().toISOString(), payload: { article: { title: 'Example', url: 'https://example.com' } } });
+ *   const payload = {
+ *     type: 'article',
+ *     metadata: { title: 'Example Article', description: 'An example', tags: ['example'] },
+ *     content: { format: 'markdown', body: '# Hello World\n\nThis is content.' },
+ *     deployment: { repository: 'owner/repo', filename: 'example.html' }
+ *   };
+ *   const job = await insertJob({
+ *     id: '123',
+ *     status: 'queued',
+ *     created_at: new Date().toISOString(),
+ *     updated_at: new Date().toISOString(),
+ *     payload
+ *   });
  *   const status = await getJobStatus(job.job_id);
  *   await updateJobStatus(job.job_id, 'done');
  */
@@ -30,11 +42,11 @@ function buildHeaders(json = true) {
 
 /**
  * Insert a new publishing job.
- * @param {object} job - Job payload as defined by the API schema.
- * @returns {Promise<object>} API response containing status, message and job_id.
+ * @param {object} job - Job with structured ContentJobPayload as defined by the API schema.
+ * @returns {Promise<object>} API response containing status, job_id and dispatched flag.
  */
 export async function insertJob(job) {
-  const res = await fetch(`${BASE_URL}/api/insertJob.php`, {
+  const res = await fetch(`${BASE_URL}/jobs`, {
     method: 'POST',
     headers: buildHeaders(true),
     body: JSON.stringify(job)
@@ -48,12 +60,10 @@ export async function insertJob(job) {
 /**
  * Retrieve the status of a publishing job.
  * @param {string} id - Job identifier.
- * @returns {Promise<object>} Job data.
+ * @returns {Promise<object>} Job object with structured ContentJobPayload.
  */
 export async function getJobStatus(id) {
-  const url = new URL('/api/getJobStatus.php', BASE_URL);
-  url.searchParams.set('id', id);
-  const res = await fetch(url, {
+  const res = await fetch(`${BASE_URL}/jobs/${id}`, {
     method: 'GET',
     headers: buildHeaders(false)
   });
@@ -64,16 +74,20 @@ export async function getJobStatus(id) {
 }
 
 /**
- * Update the status of an existing job.
+ * Update the status of a publishing job.
  * @param {string} id - Job identifier.
- * @param {string} status - New status string.
- * @returns {Promise<object>} API response containing status.
+ * @param {string} status - New status value.
+ * @param {object} [payload] - Optional updated payload data.
+ * @returns {Promise<object>} API response.
  */
-export async function updateJobStatus(id, status) {
-  const res = await fetch(`${BASE_URL}/api/updateJob.php`, {
+export async function updateJobStatus(id, status, payload = null) {
+  const updateData = { id, status };
+  if (payload) updateData.payload = payload;
+  
+  const res = await fetch(`${BASE_URL}/jobs/update`, {
     method: 'POST',
     headers: buildHeaders(true),
-    body: JSON.stringify({ id, status })
+    body: JSON.stringify(updateData)
   });
   if (!res.ok) {
     throw new Error(`updateJobStatus failed: ${res.status} ${await res.text()}`);
@@ -81,4 +95,44 @@ export async function updateJobStatus(id, status) {
   return res.json();
 }
 
-export default { insertJob, getJobStatus, updateJobStatus };
+/**
+ * Get all jobs with status filter.
+ * @param {string} status - Status filter (comma-separated or '*' for all).
+ * @returns {Promise<Array>} Array of job objects.
+ */
+export async function getAllJobs(status = '*') {
+  const res = await fetch(`${BASE_URL}/jobs/list`, {
+    method: 'POST',
+    headers: buildHeaders(true),
+    body: JSON.stringify({ status })
+  });
+  if (!res.ok) {
+    throw new Error(`getAllJobs failed: ${res.status} ${await res.text()}`);
+  }
+  return res.json();
+}
+
+/**
+ * Get job artifact (payload) with HMAC authentication.
+ * @param {string} id - Job identifier.
+ * @param {string} hmacKey - HMAC secret key.
+ * @returns {Promise<object>} ContentJobPayload object.
+ */
+export async function getJobArtifact(id, hmacKey) {
+  const timestamp = Math.floor(Date.now() / 1000).toString();
+  const crypto = await import('crypto');
+  const signature = crypto.createHmac('sha256', hmacKey).update(timestamp).digest('hex');
+  
+  const res = await fetch(`${BASE_URL}/jobs/${id}/artifact`, {
+    method: 'GET',
+    headers: {
+      'Accept': 'application/json',
+      'X-Timestamp': timestamp,
+      'X-Signature': signature
+    }
+  });
+  if (!res.ok) {
+    throw new Error(`getJobArtifact failed: ${res.status} ${await res.text()}`);
+  }
+  return res.json();
+}

@@ -34,6 +34,172 @@
         },
         "required": ["error"]
       },
+      "ContentJobPayload": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "enum": ["article", "post", "page"],
+            "description": "Type of content being created"
+          },
+          "metadata": {
+            "$ref": "#/components/schemas/ContentMetadata"
+          },
+          "content": {
+            "$ref": "#/components/schemas/ContentBody"
+          },
+          "assets": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ContentAsset"
+            },
+            "description": "Associated media and files"
+          },
+          "seo": {
+            "$ref": "#/components/schemas/SEOData"
+          },
+          "deployment": {
+            "$ref": "#/components/schemas/DeploymentConfig"
+          }
+        },
+        "required": ["type", "metadata", "content", "deployment"]
+      },
+      "ContentMetadata": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string",
+            "description": "Article title"
+          },
+          "description": {
+            "type": "string",
+            "description": "Brief article description"
+          },
+          "tags": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Content tags for categorization"
+          },
+          "category": {
+            "type": "string",
+            "description": "Primary content category"
+          },
+          "author": {
+            "type": "string",
+            "description": "Content author name"
+          },
+          "publishDate": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Intended publication date"
+          },
+          "template": {
+            "type": "string",
+            "default": "article-template",
+            "description": "Template to use for rendering"
+          }
+        },
+        "required": ["title"]
+      },
+      "ContentBody": {
+        "type": "object",
+        "properties": {
+          "format": {
+            "type": "string",
+            "enum": ["markdown", "html"],
+            "default": "markdown",
+            "description": "Content format"
+          },
+          "body": {
+            "type": "string",
+            "description": "Main content body"
+          },
+          "excerpt": {
+            "type": "string",
+            "description": "Content excerpt or summary"
+          }
+        },
+        "required": ["format", "body"]
+      },
+      "ContentAsset": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "enum": ["image", "video", "document", "audio"],
+            "description": "Asset type"
+          },
+          "name": {
+            "type": "string",
+            "description": "Asset filename or identifier"
+          },
+          "url": {
+            "type": "string",
+            "description": "Asset URL or base64 data URI"
+          },
+          "alt": {
+            "type": "string",
+            "description": "Alternative text for accessibility"
+          },
+          "caption": {
+            "type": "string",
+            "description": "Asset caption or description"
+          },
+          "placement": {
+            "type": "string",
+            "enum": ["hero", "inline", "gallery", "attachment"],
+            "default": "inline",
+            "description": "How the asset should be placed in content"
+          }
+        },
+        "required": ["type", "name", "url"]
+      },
+      "SEOData": {
+        "type": "object",
+        "properties": {
+          "metaDescription": {
+            "type": "string",
+            "description": "Meta description for search engines"
+          },
+          "keywords": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "SEO keywords"
+          },
+          "canonicalUrl": {
+            "type": "string",
+            "description": "Canonical URL for this content"
+          }
+        }
+      },
+      "DeploymentConfig": {
+        "type": "object",
+        "properties": {
+          "repository": {
+            "type": "string",
+            "description": "GitHub repository in format owner/repo"
+          },
+          "branch": {
+            "type": "string",
+            "default": "main",
+            "description": "Target branch for deployment"
+          },
+          "basePath": {
+            "type": "string",
+            "default": "/content/",
+            "description": "Base path within repository"
+          },
+          "filename": {
+            "type": "string",
+            "description": "Target filename for the content"
+          }
+        },
+        "required": ["repository", "filename"]
+      },
       "Job": {
         "type": "object",
         "properties": {
@@ -58,8 +224,7 @@
             "type": "string"
           },
           "payload": {
-            "type": "string",
-            "description": "JSON string containing job metadata and configuration"
+            "$ref": "#/components/schemas/ContentJobPayload"
           }
         },
         "required": ["id", "status", "created_at", "updated_at", "payload"]
@@ -264,44 +429,7 @@
                     "format": "date-time"
                   },
                   "payload": {
-                    "type": "object",
-                    "properties": {
-                      "repository": {
-                        "type": "string",
-                        "description": "GitHub repository in format owner/repo"
-                      },
-                      "branch": {
-                        "type": "string",
-                        "default": "main"
-                      },
-                      "base_path": {
-                        "type": "string"
-                      },
-                      "filename": {
-                        "type": "string"
-                      },
-                      "content": {
-                        "type": "string"
-                      },
-                      "metadata": {
-                        "type": "object",
-                        "properties": {
-                          "title": {
-                            "type": "string"
-                          },
-                          "tags": {
-                            "type": "array",
-                            "items": {
-                              "type": "string"
-                            }
-                          },
-                          "description": {
-                            "type": "string"
-                          }
-                        }
-                      }
-                    },
-                    "required": ["repository", "filename", "content"]
+                    "$ref": "#/components/schemas/ContentJobPayload"
                   }
                 },
                 "required": ["id", "status", "created_at", "updated_at", "payload"]
@@ -566,7 +694,8 @@
                   },
                   "payload": {
                     "type": "object",
-                    "description": "Optional updated payload data"
+                    "description": "Optional updated payload data",
+                    "$ref": "#/components/schemas/ContentJobPayload"
                   }
                 },
                 "required": ["id", "status"]
@@ -691,8 +820,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object",
-                  "description": "Raw job payload as JSON object"
+                  "$ref": "#/components/schemas/ContentJobPayload"
                 }
               }
             }
