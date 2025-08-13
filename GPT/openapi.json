@@ -16,12 +16,6 @@
         "type": "http",
         "scheme": "bearer",
         "bearerFormat": "JWT"
-      },
-      "hmacAuth": {
-        "type": "apiKey",
-        "in": "header",
-        "name": "X-Signature",
-        "description": "HMAC signature with X-Timestamp header"
       }
     },
     "schemas": {

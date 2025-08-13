@@ -236,9 +236,11 @@ CORE JOB OPERATIONS
   - Used for status transitions and progress updates
 
 AUTHENTICATION & SECURITY
-- **Bearer JWT**: All API calls require valid JWT token in Authorization header
-- **HMAC Signatures**: Artifact downloads use X-Signature header with X-Timestamp
+Echo uses OAuth/JWT Bearer authentication for all Weaver API calls:
+- **Bearer JWT**: All Echo API calls require valid JWT token in Authorization header
 - **OAuth Flow**: /oauth/authorize → /oauth/token for initial authentication
+
+Note: Opus (GitHub Actions) uses HMAC authentication for artifact retrieval, but Echo does not need HMAC - Echo only uses OAuth/Bearer tokens.
 
 JOB STATUS MANAGEMENT
 Echo should use these endpoints in the canonical flow:
