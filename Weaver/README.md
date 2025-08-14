@@ -9,11 +9,11 @@
 ```
 
 Weaver provides:
-- **OAuth 2.0 Authentication** with Google identity provider
-- **JWT-based API Authorization** with scope management
-- **Job Management System** for content publishing workflows
-- **GitHub App Integration** for secure repository operations
-- **HMAC Signature Verification** for webhook security
+- **API Key Authentication** (`X-API-Key`) for service-to-service calls from Echo
+- **Optional Session JWT** (job-scoped, ephemeral) to bind follow-up operations to a single job
+- **Job Management System** for content publishing workflows (content + assets)
+- **GitHub App Integration** (installation tokens, file cache for installation IDs)
+- **HMAC Signature Verification** (optional artifact / webhook validation)
 
 ## Language Implementations
 
@@ -49,47 +49,38 @@ Weaver is designed to be implementation-agnostic, with multiple language version
 
 ## Common API Specification
 
-All Weaver implementations expose identical REST APIs defined in the [OpenAPI specification](../openapi.json):
+All Weaver implementations target a shared REST contract (see `GPT/openapi.json`). Legacy OAuth flow has been removed pre-production.
 
-### OAuth Endpoints
-- `GET /oauth/authorize` - Initiate OAuth flow
-- `GET /oauth/google_callback` - Handle Google OAuth callback  
-- `POST /oauth/token` - Exchange authorization code for JWT
-
-### Job Management API
-- `POST /api/insertJob.php` - Create new publishing job
-- `GET /api/getJobStatus.php?id={jobId}` - Get job status
-- `POST /api/getAllJobs.php` - List jobs (filtered by status)
-- `POST /api/updateJob.php` - Update job status
+### Core API (current PHP reference)
+- `POST /api/insertJob.php` – Create publishing job (returns `job_id` + optional `weaver_session`)
+- `GET  /api/getJobStatus.php?id={jobId}` – Retrieve job status
+- `POST /api/getAllJobs.php` – List jobs with pagination `{status, limit, offset}`
+- `POST /api/updateJob.php` – Update job status / payload patches
+- `GET  /api/jobArtifact.php?id={jobId}` – Retrieve stored job payload (API key + optional HMAC/session)
 
 ### GitHub Integration
-- `POST /api/github_app.php` - GitHub App webhook handler
-- Repository dispatch for workflow triggering
+- GitHub App installation token retrieval (App ID + private key)
+- Persistent file cache to reduce installation lookup calls
+- Placeholder webhook handler (`api/github_app.php`) for future events
 
 ## Environment Configuration
 
-All implementations use consistent environment variables:
+Environment variables (current model):
 
 ```env
-# Google OAuth Configuration
-GOOGLE_CLIENT_ID=your_google_client_id
-GOOGLE_CLIENT_SECRET=your_google_client_secret
+WEAVER_API_KEY=change_me_long_random
+WEAVER_SESSION_JWT_SECRET=optional_session_secret
 
-# Weaver OAuth Settings  
-WEAVER_OAUTH_CLIENT_ID=dsb-gpt
-WEAVER_JWT_SECRET=your_jwt_secret
-WEAVER_JWT_EXPIRY=3600
-
-# GitHub App Configuration
 GITHUB_APP_ID=your_github_app_id
-GITHUB_APP_PRIVATE_KEY=path_to_private_key.pem
-GITHUB_WEBHOOK_SECRET=your_webhook_secret
+GITHUB_APP_PRIVATE_KEY=../weaver-private.pem
+GITHUB_WEBHOOK_SECRET=optional_webhook_secret
 
-# Database Configuration (if using database storage)
-DATABASE_URL=your_database_connection_string
+# Repository Allow List (JSON array)
+WEAVER_ALLOWLIST=[{"owner":"o","repo":"r"}]
 
-# CORS Configuration
+# Optional / Advanced
 ALLOWED_ORIGINS=https://chat.openai.com,http://localhost:3000
+LOG_LEVEL=info
 ```
 
 ## Choosing an Implementation

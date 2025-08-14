@@ -9,7 +9,7 @@ This directory will contain the Node.js implementation of Weaver, providing the 
 ### Framework & Dependencies
 - **Express.js** or **Fastify** for high-performance HTTP server
 - **jsonwebtoken** for JWT handling
-- **googleapis** for Google OAuth integration
+- (Optional) future external identity integration (deferred; current model uses API key + session JWT)
 - **@octokit/rest** for GitHub API operations
 - **cors** for cross-origin resource sharing
 - **helmet** for security headers
@@ -25,12 +25,11 @@ src/
 │   ├── cors.js           # CORS configuration
 │   └── validation.js     # Request validation
 ├── routes/
-│   ├── oauth.js          # OAuth endpoints
+│   ├── sessions.js       # Session issuance (job-scoped JWT)
 │   ├── jobs.js           # Job management API
 │   └── github.js         # GitHub webhook handling
 ├── services/
-│   ├── GoogleOAuthService.js
-│   ├── JwtService.js
+│   ├── SessionService.js
 │   └── JobService.js
 ├── utils/
 │   └── database.js       # Database abstraction
@@ -79,14 +78,9 @@ npm start
 PORT=3000
 NODE_ENV=production
 
-# Google OAuth
-GOOGLE_CLIENT_ID=your_google_client_id
-GOOGLE_CLIENT_SECRET=your_google_client_secret
-
-# Weaver Configuration
-WEAVER_OAUTH_CLIENT_ID=dsb-gpt
-WEAVER_JWT_SECRET=your_jwt_secret
-WEAVER_JWT_EXPIRY=3600
+# Core Auth
+WEAVER_API_KEY=change_me
+WEAVER_SESSION_JWT_SECRET=optional_session_secret
 
 # GitHub App
 GITHUB_APP_ID=your_github_app_id
@@ -102,18 +96,14 @@ ALLOWED_ORIGINS=https://chat.openai.com,http://localhost:3000
 
 ## API Compatibility
 
-This implementation will provide 100% API compatibility with the PHP version:
-
-### OAuth Endpoints
-- `GET /oauth/authorize`
-- `GET /oauth/google_callback`
-- `POST /oauth/token`
+This implementation will provide compatibility with the current simplified PHP API model:
 
 ### Job Management
-- `POST /api/insertJob`
-- `GET /api/getJobStatus`
-- `POST /api/getAllJobs`
-- `POST /api/updateJob`
+- `POST /api/insertJob` (API key)
+- `GET /api/getJobStatus?id=`
+- `POST /api/getAllJobs` (API key, pagination)
+- `POST /api/updateJob` (API key)
+- `GET /api/jobArtifact?id=` (API key)
 
 ### Additional Features
 - `GET /health` - Health check endpoint
@@ -130,12 +120,12 @@ Compared to PHP implementation:
 
 ## Development Roadmap
 
-1. **Phase 1**: Basic Express.js setup with OAuth endpoints
-2. **Phase 2**: Job management API implementation  
-3. **Phase 3**: GitHub App integration and webhooks
-4. **Phase 4**: Database abstraction layer
-5. **Phase 5**: Testing and deployment automation
-6. **Phase 6**: Production monitoring and observability
+1. **Phase 1**: Basic Express.js setup + API key middleware + job endpoints
+2. **Phase 2**: Session JWT issuance & validation
+3. **Phase 3**: GitHub App integration & webhooks
+4. **Phase 4**: Asset processing parity
+5. **Phase 5**: Test & CI automation
+6. **Phase 6**: Metrics & observability
 
 ## Contributing
 

@@ -12,10 +12,17 @@
   ],
   "components": {
     "securitySchemes": {
-      "bearerAuth": {
+      "ApiKeyAuth": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "X-API-Key",
+        "description": "Service-to-service API key issued to Echo (WEAVER_API_KEY)"
+      },
+      "SessionBearer": {
         "type": "http",
         "scheme": "bearer",
-        "bearerFormat": "JWT"
+        "bearerFormat": "JWT",
+        "description": "Ephemeral job-scoped session token (weaver_session) used for follow-up secure actions"
       }
     },
     "schemas": {
@@ -225,146 +232,9 @@
       }
     }
   },
-  "security": [
-    {
-      "bearerAuth": []
-    }
-  ],
+  "security": [],
   "paths": {
-    "/oauth/authorize": {
-      "get": {
-        "operationId": "authorizeOAuth",
-        "summary": "OAuth 2.0 authorization endpoint",
-        "security": [],
-        "parameters": [
-          {
-            "name": "response_type",
-            "in": "query",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "enum": ["code"]
-            }
-          },
-          {
-            "name": "client_id",
-            "in": "query",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "redirect_uri",
-            "in": "query",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "scope",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "state",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "302": {
-            "description": "Redirect to Google OAuth"
-          },
-          "400": {
-            "description": "Invalid request",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/oauth/token": {
-      "post": {
-        "operationId": "exchangeToken",
-        "summary": "OAuth 2.0 token exchange endpoint",
-        "security": [],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/x-www-form-urlencoded": {
-              "schema": {
-                "type": "object",
-                "properties": {
-                  "grant_type": {
-                    "type": "string",
-                    "enum": ["authorization_code"]
-                  },
-                  "code": {
-                    "type": "string"
-                  },
-                  "redirect_uri": {
-                    "type": "string"
-                  },
-                  "client_id": {
-                    "type": "string"
-                  }
-                },
-                "required": ["grant_type", "code", "redirect_uri", "client_id"]
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Token issued successfully",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "access_token": {
-                      "type": "string"
-                    },
-                    "token_type": {
-                      "type": "string"
-                    },
-                    "expires_in": {
-                      "type": "integer"
-                    },
-                    "scope": {
-                      "type": "string"
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Invalid request",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
+    
     "/.well-known/jwks.json": {
       "get": {
         "operationId": "getJWKS",
@@ -395,12 +265,8 @@
     "/jobs": {
       "post": {
         "operationId": "insertJob",
-        "summary": "Insert a new publishing job with article metadata",
-        "security": [
-          {
-            "bearerAuth": []
-          }
-        ],
+        "summary": "Create a new publishing job (Echo → Weaver)",
+        "security": [ { "ApiKeyAuth": [] } ],
         "requestBody": {
           "required": true,
           "content": {
@@ -408,25 +274,9 @@
               "schema": {
                 "type": "object",
                 "properties": {
-                  "id": {
-                    "type": "string"
-                  },
-                  "status": {
-                    "type": "string"
-                  },
-                  "created_at": {
-                    "type": "string",
-                    "format": "date-time"
-                  },
-                  "updated_at": {
-                    "type": "string",
-                    "format": "date-time"
-                  },
-                  "payload": {
-                    "$ref": "#/components/schemas/ContentJobPayload"
-                  }
+                  "payload": { "$ref": "#/components/schemas/ContentJobPayload" }
                 },
-                "required": ["id", "status", "created_at", "updated_at", "payload"]
+                "required": ["payload"]
               }
             }
           }
@@ -445,12 +295,12 @@
                     "job_id": {
                       "type": "string"
                     },
-                    "dispatched": {
-                      "type": "boolean",
-                      "description": "Whether GitHub dispatch was triggered"
+                    "weaver_session": {
+                      "type": "string",
+                      "description": "Ephemeral session token (JWT) if session support enabled"
                     }
                   },
-                  "required": ["status", "job_id", "dispatched"]
+                  "required": ["status", "job_id"]
                 }
               }
             }
@@ -466,17 +316,7 @@
             }
           },
           "401": {
-            "description": "Unauthorized - missing or invalid token",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          },
-          "403": {
-            "description": "Forbidden - insufficient scope (requires jobs:write)",
+            "description": "Unauthorized - missing or invalid API key",
             "content": {
               "application/json": {
                 "schema": {
@@ -494,12 +334,8 @@
     "/jobs/list": {
       "post": {
         "operationId": "getAllJobs",
-        "summary": "Retrieve all jobs filtered by status (user-scoped unless admin)",
-        "security": [
-          {
-            "bearerAuth": []
-          }
-        ],
+  "summary": "List jobs filtered by status (API key required; optional session narrows to its job)",
+        "security": [ { "ApiKeyAuth": [] } ],
         "requestBody": {
           "required": true,
           "content": {
@@ -507,10 +343,9 @@
               "schema": {
                 "type": "object",
                 "properties": {
-                  "status": {
-                    "type": "string",
-                    "description": "Comma-separated list of statuses to include, or * for all records"
-                  }
+                  "status": { "type": "string", "description": "Comma-separated list of statuses, or * for all" },
+                  "limit": { "type": "integer", "minimum": 1, "maximum": 200, "default": 50 },
+                  "offset": { "type": "integer", "minimum": 0, "default": 0 }
                 },
                 "required": ["status"]
               }
@@ -523,10 +358,23 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/Job"
-                  }
+                  "type": "object",
+                  "properties": {
+                    "items": {
+                      "type": "array",
+                      "items": { "$ref": "#/components/schemas/Job" }
+                    },
+                    "pagination": {
+                      "type": "object",
+                      "properties": {
+                        "total": { "type": "integer" },
+                        "limit": { "type": "integer" },
+                        "offset": { "type": "integer" }
+                      },
+                      "required": ["total","limit","offset"]
+                    }
+                  },
+                  "required": ["items","pagination"]
                 }
               }
             }
@@ -542,7 +390,7 @@
             }
           },
           "401": {
-            "description": "Unauthorized - missing or invalid token",
+            "description": "Unauthorized - missing or invalid API key",
             "content": {
               "application/json": {
                 "schema": {
@@ -552,14 +400,7 @@
             }
           },
           "403": {
-            "description": "Forbidden - insufficient scope (requires jobs:read)",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
+            "description": "Reserved (not used)"
           },
           "405": {
             "description": "Method not allowed - only POST supported",
@@ -577,25 +418,13 @@
         }
       }
     },
-    "/jobs/{id}": {
+    "/job/status": {
       "get": {
         "operationId": "getJobStatus",
-        "summary": "Get the status of a publishing job (user-scoped unless admin)",
-        "security": [
-          {
-            "bearerAuth": []
-          }
-        ],
+        "summary": "Get the status of a publishing job (optionally supply session bearer)",
+        "security": [],
         "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            },
-            "description": "The unique job ID to check status"
-          }
+          { "name": "id", "in": "query", "required": true, "schema": { "type": "string" }, "description": "Job ID" }
         ],
         "responses": {
           "200": {
@@ -610,26 +439,6 @@
           },
           "400": {
             "description": "Missing or invalid ID",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Unauthorized - missing or invalid token",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          },
-          "403": {
-            "description": "Forbidden - insufficient scope (requires jobs:read) or not job owner",
             "content": {
               "application/json": {
                 "schema": {
@@ -667,12 +476,8 @@
     "/jobs/update": {
       "post": {
         "operationId": "updateJobStatus",
-        "summary": "Update the status of an existing publishing job (user-scoped unless admin)",
-        "security": [
-          {
-            "bearerAuth": []
-          }
-        ],
+        "summary": "Update the status (API key required; optionally supply session bound to job)",
+        "security": [ { "ApiKeyAuth": [] } ],
         "requestBody": {
           "required": true,
           "content": {
@@ -725,7 +530,7 @@
             }
           },
           "401": {
-            "description": "Unauthorized - missing or invalid token",
+            "description": "Unauthorized - missing or invalid API key",
             "content": {
               "application/json": {
                 "schema": {
@@ -734,16 +539,7 @@
               }
             }
           },
-          "403": {
-            "description": "Forbidden - insufficient scope (requires jobs:write) or not job owner",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          },
+          "403": { "description": "Reserved (not used)" },
           "404": {
             "description": "Job not found",
             "content": {
@@ -770,52 +566,22 @@
         }
       }
     },
-    "/jobs/{id}/artifact": {
+    "/jobs/artifact": {
       "get": {
         "operationId": "getJobArtifact",
-        "summary": "Retrieve job payload artifact (HMAC authenticated for external systems)",
-        "security": [
-          {
-            "hmacAuth": []
-          }
-        ],
+        "summary": "Retrieve job payload artifact (API key + optional HMAC + optional session)",
+        "security": [ { "ApiKeyAuth": [] } ],
         "parameters": [
-          {
-            "name": "id",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            },
-            "description": "The unique job ID"
-          },
-          {
-            "name": "X-Timestamp",
-            "in": "header",
-            "required": true,
-            "schema": {
-              "type": "string"
-            },
-            "description": "Unix timestamp for HMAC verification"
-          },
-          {
-            "name": "X-Signature",
-            "in": "header",
-            "required": true,
-            "schema": {
-              "type": "string"
-            },
-            "description": "HMAC signature of timestamp"
-          }
+          { "name": "id", "in": "query", "required": true, "schema": { "type": "string" }, "description": "Job ID" },
+          { "name": "X-Timestamp", "in": "header", "required": false, "schema": { "type": "string" }, "description": "Unix timestamp if using HMAC" },
+          { "name": "X-Signature", "in": "header", "required": false, "schema": { "type": "string" }, "description": "HMAC signature of timestamp" }
         ],
         "responses": {
           "200": {
-            "description": "Artifact retrieved successfully",
+            "description": "Artifact (job payload) retrieved successfully",
             "content": {
               "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ContentJobPayload"
-                }
+                "schema": { "$ref": "#/components/schemas/ContentJobPayload" }
               }
             }
           },
