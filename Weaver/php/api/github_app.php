@@ -1,4 +1,5 @@
 <?php
+// Legacy GitHub App helper retained for backward compatibility.
 require_once __DIR__ . '/../bootstrap.php';
 
 function base64url_encode(string $data): string {

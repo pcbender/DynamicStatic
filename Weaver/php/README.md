@@ -2,13 +2,13 @@
 
 This directory contains the PHP implementation of Weaver, the messenger and gatekeeper component in the Dynamic Static AI CMS architecture.
 
-## 🕸️ Overview
+## Overview
 
-The PHP implementation provides a production-ready backend service that handles:
-- OAuth 2.0 authentication with Google identity provider
-- JWT-based API authorization with scope management
-- Job management system for content publishing workflows
-- GitHub App integration for secure repository operations
+This implementation now uses a simplified service authentication model:
+- API Key authentication for service-to-service calls (header `X-API-Key`)
+- Optional ephemeral job-scoped session JWT (`weaver_session`) returned on job creation
+- Job management & content payload handling (including structured assets)
+- GitHub App integration (installation token + persistent file cache)
 
 ## Requirements
 
@@ -28,32 +28,38 @@ The PHP implementation provides a production-ready backend service that handles:
    ```
 
 2. **Configure environment variables:**
-   Create a `.env` file in the project root (two levels up):
-   ```env
-   # Google OAuth Configuration
-   GOOGLE_CLIENT_ID=your_google_client_id
-   GOOGLE_CLIENT_SECRET=your_google_client_secret
-   
-   # Weaver OAuth Settings
-   WEAVER_OAUTH_CLIENT_ID=dsb-gpt
-   WEAVER_JWT_SECRET=your_jwt_secret
-   WEAVER_JWT_EXPIRY=3600
-   
-   # GitHub App Configuration
-   GITHUB_APP_ID=your_github_app_id
-   GITHUB_APP_PRIVATE_KEY=../weaver-private.pem
-   GITHUB_WEBHOOK_SECRET=your_webhook_secret
-   ```
+  Environment file strategy:
+  - `.env.local` (committed) is for local development defaults (no real secrets).
+  - `.env` (ignored) is for production deployment secrets.
+  - If host contains `localhost` or `127.0.0.1`, loader prefers `.env.local` then falls back to `.env`.
+  - Otherwise (non-local), loader prefers `.env` then `.env.local`.
+  - You can override with `WEAVER_ENV_FILE=somefile`.
+
+  Create a production `.env` (not committed) or edit the provided `.env.local` for dev:
+  ```env
+  # Core Auth
+  WEAVER_API_KEY=change_me_long_random
+  WEAVER_SESSION_JWT_SECRET=optional_session_secret   # if omitted, session tokens disabled
+
+  # GitHub App
+  GITHUB_APP_ID=your_github_app_id
+  GITHUB_APP_PRIVATE_KEY=../weaver-private.pem   # relative path to PEM
+  GITHUB_WEBHOOK_SECRET=optional_webhook_secret
+
+  # (Allowlist removed; GitHub App installation now governs repository authorization)
+
+  # Optional
+  LOG_LEVEL=info
+  ```
 
 3. **Set up web server configuration:**
 
-   **Apache (.htaccess):**
+  **Apache (.htaccess):**
    ```apache
    RewriteEngine On
    RewriteCond %{REQUEST_FILENAME} !-f
    RewriteCond %{REQUEST_FILENAME} !-d
-   RewriteRule ^api/(.*)$ api/$1 [L]
-   RewriteRule ^oauth/(.*)$ oauth/$1 [L]
+  RewriteRule ^api/(.*)$ api/$1 [L]
    
    # Security headers
    Header always set X-Content-Type-Options nosniff
@@ -61,14 +67,10 @@ The PHP implementation provides a production-ready backend service that handles:
    Header always set X-XSS-Protection "1; mode=block"
    ```
 
-   **Nginx:**
+  **Nginx:**
    ```nginx
    location /api/ {
-       try_files $uri $uri/ /api/index.php?$query_string;
-   }
-   
-   location /oauth/ {
-       try_files $uri $uri/ /oauth/index.php?$query_string;
+     try_files $uri $uri/ /api/index.php?$query_string;
    }
    ```
 
@@ -93,80 +95,67 @@ $clientId = $config->googleClientId;
 $jwtSecret = $config->weaverJwtSecret;
 ```
 
-### Service Layer
-- **`GoogleOAuthService`** - Handles Google OAuth flows and token validation
-- **`JwtService`** - Creates and validates JWT tokens with scope-based permissions
+### Auth Components
+- **API Key Guard** (`auth_api_key.php`) – validates `X-API-Key` header
+- **Session Token** (`session.php`) – issues HS256 JWT scoped to a single job (optional)
 
-## API Endpoints
-
-### OAuth Flow
+## API Endpoints (Current)
 ```
-GET  /oauth/authorize        - Initiate OAuth authorization
-GET  /oauth/google_callback  - Handle Google OAuth callback
-POST /oauth/token           - Exchange authorization code for JWT
-```
-
-### Job Management
-```
-POST /api/insertJob.php     - Create new publishing job
-GET  /api/getJobStatus.php  - Get job status by ID
-POST /api/getAllJobs.php    - List jobs (filtered by status)
-POST /api/updateJob.php     - Update job status
-```
-
-### Authentication & Authorization
-```
-POST /api/auth.php          - Authentication utilities
-POST /api/github_app.php    - GitHub App webhook handler
+POST /api/insertJob.php     - Create new publishing job (X-API-Key required)
+GET  /api/getJobStatus.php  - Get job status (?id=) (public, optional session bearer)
+POST /api/getAllJobs.php    - List jobs (X-API-Key; limit/offset pagination; optional session narrows to job)
+POST /api/updateJob.php     - Update job status (X-API-Key; optional session must match job)
+GET  /api/jobArtifact.php   - Retrieve job payload (X-API-Key; optional HMAC + session)
+GET  /api/health.php        - Health & env diagnostics (no auth; no secrets)
 ```
 
 ## Usage Examples
 
-### OAuth Flow Testing
-```bash
-# 1. Test authorization endpoint
-curl "http://localhost/oauth/authorize?response_type=code&client_id=dsb-gpt&redirect_uri=https%3A//example.com/callback&state=test123&scope=jobs:read"
+### Quick Testing (API Key + Session)
+Assume: `WEAVER_API_KEY=dev-key` and server running at `http://localhost:8080`.
 
-# 2. Exchange code for token (after Google auth)
-curl -X POST "http://localhost/oauth/token" \
+```bash
+# Create job (ContentJobPayload)
+curl -s -X POST http://localhost:8080/api/insertJob.php \
+  -H "X-API-Key: dev-key" \
   -H "Content-Type: application/json" \
   -d '{
-    "grant_type": "authorization_code",
-    "code": "authorization_code_from_google", 
-    "client_id": "dsb-gpt"
-  }'
-```
-
-### Job Management
-```bash
-# Create a new job
-curl -X POST "http://localhost/api/insertJob.php" \
-  -H "Authorization: Bearer your_jwt_token" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "id": "job-123",
-    "status": "pending",
-    "created_at": "2025-08-13T10:00:00Z",
-    "updated_at": "2025-08-13T10:00:00Z",
     "payload": {
-      "repository": "owner/repo",
-      "article": {
-        "title": "Sample Article",
-        "url": "/sample-article"
-      }
+      "type":"article",
+      "metadata":{"title":"Hello World"},
+      "content":{"format":"markdown","body":"# Title\n\n![hero](asset:hero.png)"},
+      "assets":[{"type":"image","name":"hero.png","url":"data:image/png;base64,iVBORw0...","placement":"hero"}],
+      "deployment":{"repository":"o/r","filename":"hello-world.html"}
     }
   }'
 
-# Get job status
-curl -H "Authorization: Bearer your_jwt_token" \
-     "http://localhost/api/getJobStatus.php?id=job-123"
+# Sample response:
+# {"status":"success","job_id":"ab12cd34ef56...","weaver_session":"<JWT>"}
 
-# List all jobs
-curl -X POST "http://localhost/api/getAllJobs.php" \
-  -H "Authorization: Bearer your_jwt_token" \
+JOB_ID=ab12cd34ef56            # substitute from response
+SESSION=<JWT_FROM_RESPONSE>
+
+# Get job status (public; optionally add Authorization: Bearer $SESSION)
+curl -s "http://localhost:8080/api/getJobStatus.php?id=$JOB_ID"
+
+# Update job status (using API key + session)
+curl -s -X POST http://localhost:8080/api/updateJob.php \
+  -H "X-API-Key: dev-key" \
+  -H "Authorization: Bearer $SESSION" \
   -H "Content-Type: application/json" \
-  -d '{"status": "*"}'
+  -d '{"id":"'$JOB_ID'","status":"completed"}'
+
+# List jobs (pagination)
+curl -s -X POST http://localhost:8080/api/getAllJobs.php \
+  -H "X-API-Key: dev-key" \
+  -H "Content-Type: application/json" \
+  -d '{"status":"*","limit":10,"offset":0}'
+
+# Fetch artifact (payload)
+curl -s "http://localhost:8080/api/jobArtifact.php?id=$JOB_ID" -H "X-API-Key: dev-key"
 ```
+
+> Legacy OAuth flow and scope-based bearer tokens have been removed. Any references in older docs should be disregarded.
 
 ## Development
 
@@ -179,14 +168,12 @@ php -S localhost:8080 -t .
 php -S localhost:8080 -t . -d auto_prepend_file=bootstrap.php
 ```
 
-### Running Tests
+### Running Lightweight Tests
+Current repo includes a minimal script test (`tests/InsertJobAuthTest.php`) that simulates API calls directly.
 ```bash
-# Run PHPUnit tests
-composer test
-
-# Or directly
-vendor/bin/phpunit
+php tests/InsertJobAuthTest.php
 ```
+Future: reinstate full PHPUnit suite with additional coverage (assets, pagination, artifact retrieval).
 
 ### Debugging
 Enable error reporting in development:
@@ -198,10 +185,10 @@ ini_set('display_errors', 1);
 
 ## Security Considerations
 
-### JWT Token Security
-- Uses RS256 algorithm with private/public key pairs
-- Implements scope-based authorization (`jobs:read`, `jobs:write`, `jobs:admin`)
-- Configurable token expiry (default: 1 hour)
+### Session Token Security
+- HS256 JWT bound to a single job (claims: job_id, owner, repo)
+- Expires (default: 30 min) – controlled by issuance TTL
+- Optional; absence of `WEAVER_SESSION_JWT_SECRET` disables session issuance
 
 ### Input Validation
 - All inputs are sanitized and validated
@@ -209,12 +196,7 @@ ini_set('display_errors', 1);
 - CSRF protection for state parameters
 
 ### CORS Configuration
-```php
-// Configured in bootstrap.php
-header('Access-Control-Allow-Origin: https://chat.openai.com');
-header('Access-Control-Allow-Methods: GET, POST, OPTIONS');
-header('Access-Control-Allow-Headers: Authorization, Content-Type');
-```
+Configured in `bootstrap.php`; update allowed origin and headers as required for your deployment.
 
 ## Deployment
 

@@ -31,12 +31,14 @@ import process from 'node:process';
  */
 
 const BASE_URL = (process.env.OPUS_API_BASE_URL || 'https://webbness.net').replace(/\/$/, '');
-const API_TOKEN = process.env.OPUS_API_TOKEN;
+const API_TOKEN = process.env.OPUS_API_TOKEN; // legacy bearer
+const API_KEY = process.env.WEAVER_API_KEY; // new service key
 
 function buildHeaders(json = true) {
   const headers = { Accept: 'application/json' };
   if (json) headers['Content-Type'] = 'application/json';
-  if (API_TOKEN) headers['Authorization'] = `Bearer ${API_TOKEN}`;
+  if (API_KEY) headers['X-API-Key'] = API_KEY; // new auth
+  else if (API_TOKEN) headers['Authorization'] = `Bearer ${API_TOKEN}`; // fallback
   return headers;
 }
 

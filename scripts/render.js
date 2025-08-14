@@ -1,6 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { marked } from 'marked';
+import crypto from 'node:crypto';
 
 /**
  * Renders content from a structured ContentJobPayload into HTML files
@@ -37,61 +38,96 @@ function loadTemplate(templateName) {
   throw new Error(`Template not found: ${templateName} (and no article-template.html fallback)`);
 }
 
-function renderContent(content) {
+// Decode and persist base64 data URI assets (images) to dist/assets and rewrite URL
+function materializeAssets(assets) {
+  if (!assets) return;
+  const assetsDir = path.join(DIST_DIR, 'assets');
+  if (!fs.existsSync(assetsDir)) fs.mkdirSync(assetsDir, { recursive: true });
+  assets.forEach(a => {
+    if (!a || typeof a !== 'object') return;
+    if (!a.url || typeof a.url !== 'string') return;
+    if (a.url.startsWith('data:')) {
+      // data:[<mediatype>][;base64],<data>
+      const match = a.url.match(/^data:([^;]+);base64,(.+)$/);
+      if (!match) return;
+      const mime = match[1];
+      const b64 = match[2];
+      let ext = 'bin';
+      if (mime === 'image/png') ext = 'png';
+      else if (mime === 'image/jpeg') ext = 'jpg';
+      else if (mime === 'image/gif') ext = 'gif';
+      else if (mime === 'image/webp') ext = 'webp';
+      const safeName = (a.name || ('asset-' + crypto.randomBytes(4).toString('hex'))) // base name
+        .replace(/[^A-Za-z0-9_.-]/g, '_')
+        .replace(/\.+$/, '');
+      const fileName = safeName + '.' + ext;
+      const filePath = path.join(assetsDir, fileName);
+      try {
+        fs.writeFileSync(filePath, Buffer.from(b64, 'base64'));
+        a.url = '/assets/' + fileName; // relative public path
+      } catch (e) {
+        console.warn('Failed to write asset', fileName, e.message);
+      }
+    }
+  });
+}
+
+// Replace markdown placeholders ![alt](asset:name) with actual markdown/image or HTML
+function replaceAssetPlaceholders(markdown, assets) {
+  if (!assets || assets.length === 0) return markdown;
+  return markdown.replace(/!\[(.*?)\]\(asset:([^\)]+)\)/g, (m, alt, name) => {
+    const asset = assets.find(a => a.name === name || a.name === decodeURIComponent(name));
+    if (!asset) return m; // leave placeholder if not found
+    asset._usedInline = true;
+    if (asset.type === 'image') {
+      return `![${alt || asset.alt || ''}](${asset.url})`;
+    }
+    // Non-image: insert a link
+    return `[${alt || asset.name}](${asset.url})`;
+  });
+}
+
+function renderContent(content, assets) {
   if (content.format === 'html') {
     return content.body;
   }
-  // Default to markdown
-  return marked.parse(content.body);
+  // preprocess markdown for asset placeholders
+  let md = content.body;
+  md = replaceAssetPlaceholders(md, assets);
+  return marked.parse(md);
 }
 
-function processAssets(assets, contentType, filename) {
-  if (!assets || assets.length === 0) return '';
-  
-  let assetHtml = '';
-  
-  assets.forEach(asset => {
-    switch (asset.type) {
+// Build HTML blocks for assets not used inline.
+function buildRemainingAssetsHtml(assets) {
+  if (!assets || assets.length === 0) return { hero: '', gallery: '', attachments: '' };
+  let hero = '';
+  let galleryItems = '';
+  let attachments = '';
+  assets.forEach(a => {
+    if (a._usedInline) return;
+    switch (a.type) {
       case 'image':
-        if (asset.placement === 'hero') {
-          assetHtml += `<div class="hero-image">
-            <img src="${asset.url}" alt="${asset.alt || ''}" />
-            ${asset.caption ? `<p class="caption">${asset.caption}</p>` : ''}
-          </div>\n`;
-        } else if (asset.placement === 'gallery') {
-          assetHtml += `<div class="gallery-item">
-            <img src="${asset.url}" alt="${asset.alt || ''}" />
-            ${asset.caption ? `<p class="caption">${asset.caption}</p>` : ''}
-          </div>\n`;
-        } else {
-          // inline or default
-          assetHtml += `<figure class="inline-image">
-            <img src="${asset.url}" alt="${asset.alt || ''}" />
-            ${asset.caption ? `<figcaption>${asset.caption}</figcaption>` : ''}
-          </figure>\n`;
+        if (a.placement === 'hero') {
+          hero += `<div class="hero-image"><img src="${a.url}" alt="${a.alt || ''}" />${a.caption ? `<p class=\"caption\">${a.caption}</p>` : ''}</div>\n`;
+        } else if (a.placement === 'gallery') {
+          galleryItems += `<div class="gallery-item"><img src="${a.url}" alt="${a.alt || ''}" />${a.caption ? `<p class=\"caption\">${a.caption}</p>` : ''}</div>\n`;
+        } else if (a.placement === 'attachment') {
+          attachments += `<div class="attachment"><a href="${a.url}" download>${a.name}</a>${a.caption ? `<p class=\"caption\">${a.caption}</p>` : ''}</div>`;
         }
         break;
-        
       case 'video':
-        assetHtml += `<div class="video-container">
-          <video controls>
-            <source src="${asset.url}" type="video/mp4">
-            Your browser does not support the video tag.
-          </video>
-          ${asset.caption ? `<p class="caption">${asset.caption}</p>` : ''}
-        </div>\n`;
+        galleryItems += `<div class="video-container"><video controls><source src="${a.url}" type="video/mp4"></video>${a.caption ? `<p class=\"caption\">${a.caption}</p>` : ''}</div>`;
         break;
-        
       case 'document':
-        assetHtml += `<div class="document-link">
-          <a href="${asset.url}" target="_blank">${asset.name}</a>
-          ${asset.caption ? `<p class="description">${asset.caption}</p>` : ''}
-        </div>\n`;
+        attachments += `<div class="document-link"><a href="${a.url}" target="_blank">${a.name}</a>${a.caption ? `<p class=\"description\">${a.caption}</p>` : ''}</div>`;
+        break;
+      case 'audio':
+        attachments += `<div class="audio-item"><audio controls src="${a.url}"></audio>${a.caption ? `<p class=\"caption\">${a.caption}</p>` : ''}</div>`;
         break;
     }
   });
-  
-  return assetHtml;
+  const gallery = galleryItems ? `<div class="asset-gallery">${galleryItems}</div>` : '';
+  return { hero, gallery, attachments };
 }
 
 function updateMenuJson(metadata, contentType, filename) {
@@ -217,10 +253,12 @@ async function renderArticle(payload) {
   const template = loadTemplate(payload.metadata.template || 'article-template');
   
   // Render the main content
-  const contentHtml = renderContent(payload.content);
-  
-  // Process assets (images, videos, etc.)
-  const assetsHtml = processAssets(payload.assets, contentType, filename);
+  // Prepare assets (decode base64, etc.)
+  materializeAssets(payload.assets);
+
+  const contentHtml = renderContent(payload.content, payload.assets);
+
+  const { hero, gallery, attachments } = buildRemainingAssetsHtml(payload.assets);
   
   // Generate SEO meta tags
   const seoTags = generateSEOMetaTags(payload);
@@ -229,7 +267,7 @@ async function renderArticle(payload) {
   let html = template
     .replace(/\{\{title\}\}/g, payload.metadata.title)
     .replace(/\{\{content\}\}/g, contentHtml)
-    .replace(/\{\{assets\}\}/g, assetsHtml)
+  .replace(/\{\{assets\}\}/g, hero + gallery + attachments)
     .replace(/\{\{seo-meta\}\}/g, seoTags)
     .replace(/\{\{description\}\}/g, payload.metadata.description || '')
     .replace(/\{\{author\}\}/g, payload.metadata.author || '')

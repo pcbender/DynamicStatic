@@ -2,6 +2,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { marked } from 'marked';
 import simpleGit from 'simple-git';
+import { Octokit } from '@octokit/rest';
 
 /**
  * Persists the Opus tracking ID across workflow runs.
@@ -125,6 +126,52 @@ export async function processContentPayload(
   const git = simpleGit(repo);
   await git.add([outputPath, articlesData]);
   await git.commit(`Publish ${filename} - ${payload.metadata.title}`);
+
+  // Optional branch/PR creation controlled by env vars
+  if (process.env.WEAVER_CREATE_PR === '1' || process.env.WEAVER_CREATE_PR === 'true') {
+    const baseBranch = process.env.BASE_BRANCH || 'main';
+    const jobId = payload.job_id || payload.deployment.job_id || Date.now().toString();
+    let branchNameBase = `dynstatic/${jobId}`;
+    // Sanitize
+    branchNameBase = branchNameBase.replace(/[^A-Za-z0-9_\-\/]/g, '-').slice(0, 60);
+    let branchName = branchNameBase;
+    try {
+      await git.fetch();
+      await git.checkout(baseBranch);
+      await git.pull('origin', baseBranch);
+      await git.checkoutLocalBranch(branchName);
+    } catch (e) {
+      // If branch exists, append random suffix
+      branchName = `${branchNameBase}-${Math.random().toString(36).slice(2, 6)}`;
+      await git.checkout(baseBranch);
+      await git.checkoutLocalBranch(branchName);
+    }
+    await git.add([outputPath, articlesData]);
+    await git.commit(`Content publish for job ${jobId}`);
+    await git.push('origin', branchName, { '--set-upstream': null });
+
+    const token = process.env.GITHUB_TOKEN;
+    if (token) {
+      const octokit = new Octokit({ auth: token });
+      const repoSlug = payload.deployment.repository || process.env.GITHUB_REPOSITORY || '';
+      const [owner, repository] = repoSlug.split('/');
+      if (owner && repository) {
+        try {
+          await octokit.rest.pulls.create({
+            owner,
+            repo: repository,
+            title: `Content publish: ${payload.metadata.title}`,
+            head: branchName,
+            base: baseBranch,
+            body: `Automated content publish for job ${jobId}.\n\nContains file: ${outputPath}`
+          });
+        } catch (prErr) {
+          console.warn('PR creation failed:', prErr.message);
+        }
+      }
+    }
+  }
+
   return outputPath;
 }
 

@@ -1,26 +1,23 @@
 <?php
-require_once __DIR__ . "/../bootstrap.php";
+require_once __DIR__ . '/../bootstrap.php';
 require_once __DIR__ . '/db.php';
-require_once __DIR__ . '/auth.php';
+require_once __DIR__ . '/auth_api_key.php';
+if (env('WEAVER_SESSION_JWT_SECRET')) { require_once __DIR__ . '/session.php'; }
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-    json_out(['error' => 'Method not allowed'], 405);
+    json_out(['error' => 'method_not_allowed'], 405);
 }
-
-$claims = require_bearer();
-require_scope($claims, 'jobs:write');
-
+$raw = file_get_contents('php://input');
+if (strlen($raw) > 512 * 1024) { json_out(['error' => 'payload_too_large'], 413); }
+$data = json_decode($raw, true) ?: [];
+$id = $data['id'] ?? '';
+$status = $data['status'] ?? '';
+if (!$id || !$status) { json_out(['error' => 'missing_fields'], 400); }
+if (function_exists('requireSession') && env('WEAVER_SESSION_JWT_SECRET')) {
+    requireSession(['job_id' => $id]);
+}
 $db = initDb();
-$data = json_decode(file_get_contents('php://input'), true);
-if (!isset($data['id'], $data['status'])) {
-    bad_request('Missing fields');
-}
-$job = getJob($db, $data['id']);
-if (!$job) {
-    json_out(['error' => 'Job not found'], 404);
-}
-if ($job['created_by_sub'] !== ($claims['sub'] ?? null) && !has_scope($claims, 'jobs:admin')) {
-    forbidden();
-}
-updateJobStatus($db, $data['id'], $data['status'], $data['payload'] ?? null);
+$job = getJob($db, $id);
+if (!$job) { json_out(['error' => 'not_found'], 404); }
+updateJobStatus($db, $id, $status, $data['payload'] ?? null);
 json_out(['status' => 'updated']);
