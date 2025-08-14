@@ -5,14 +5,39 @@ use GuzzleHttp\Client;
 use GuzzleHttp\Exception\GuzzleException;
 
 function githubAppJwt(): string {
-    $appId = env('GITHUB_APP_ID');
-    $privateKey = env('GITHUB_APP_PRIVATE_KEY');
-    if (!$appId || !$privateKey) { throw new RuntimeException('GitHub App not configured'); }
-    $pk = str_contains($privateKey, '-----BEGIN') ? $privateKey : @file_get_contents($privateKey);
-    if (!$pk) { throw new RuntimeException('Private key load failed'); }
+    // Prefer the App Client ID for the issuer (GitHub docs recommendation), fallback to App ID.
+    $clientIdOrAppId = env('GITHUB_APP_CLIENT_ID') ?: env('GITHUB_APP_ID');
+    $rawKey = env('GITHUB_APP_PRIVATE_KEY');
+    if (!$clientIdOrAppId || !$rawKey) { throw new RuntimeException('GitHub App not configured'); }
+    // If the value contains a PEM header treat it as inline; replace escaped newlines. Otherwise treat as path.
+    if (str_contains($rawKey, '-----BEGIN')) {
+        $pem = str_replace('\n', "\n", $rawKey);
+    } else {
+        $pem = @file_get_contents($rawKey);
+    }
+    if (!$pem) { throw new RuntimeException('Private key load failed'); }
+
+    // Caching: reuse recently issued App JWT until ~30s before it would expire or if key changed.
+    $fingerprint = substr(sha1($pem . '|' . $clientIdOrAppId), 0, 16);
+    $cacheKey = 'gh_app_jwt';
+    if (function_exists('fileCacheGet')) {
+        $cached = fileCacheGet($cacheKey);
+        if ($cached && ($cached['exp'] ?? 0) > (time() + 30) && ($cached['fp'] ?? '') === $fingerprint && isset($cached['token'])) {
+            return $cached['token'];
+        }
+    }
     $now = time();
-    $payload = [ 'iat' => $now - 60, 'exp' => $now + 9*60, 'iss' => (int)$appId ];
-    return JWT::encode($payload, $pk, 'RS256');
+    $payload = [
+        'iat' => $now - 60,       // small clock skew allowance
+        'exp' => $now + 9 * 60,   // under GitHub 10 min max
+        'iss' => (string)$clientIdOrAppId // client ID preferred
+    ];
+    $jwt = JWT::encode($payload, $pem, 'RS256');
+    if (function_exists('fileCacheSet')) {
+        // Store with slight early expiry to force refresh before GitHub rejects it.
+        fileCacheSet($cacheKey, ['token' => $jwt, 'exp' => $payload['exp'] - 30, 'fp' => $fingerprint], ($payload['exp'] - time()));
+    }
+    return $jwt;
 }
 
 function githubBaseHeaders(): array {
