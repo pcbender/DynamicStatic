@@ -28,7 +28,14 @@ This implementation now uses a simplified service authentication model:
    ```
 
 2. **Configure environment variables:**
-  Create a `.env` file in the project root (two levels up):
+  Environment file strategy:
+  - `.env.local` (committed) is for local development defaults (no real secrets).
+  - `.env` (ignored) is for production deployment secrets.
+  - If host contains `localhost` or `127.0.0.1`, loader prefers `.env.local` then falls back to `.env`.
+  - Otherwise (non-local), loader prefers `.env` then `.env.local`.
+  - You can override with `WEAVER_ENV_FILE=somefile`.
+
+  Create a production `.env` (not committed) or edit the provided `.env.local` for dev:
   ```env
   # Core Auth
   WEAVER_API_KEY=change_me_long_random
@@ -39,8 +46,7 @@ This implementation now uses a simplified service authentication model:
   GITHUB_APP_PRIVATE_KEY=../weaver-private.pem   # relative path to PEM
   GITHUB_WEBHOOK_SECRET=optional_webhook_secret
 
-  # Repository allow list (JSON array of {owner,repo})
-  WEAVER_ALLOWLIST=[{"owner":"yourOrg","repo":"yourRepo"}]
+  # (Allowlist removed; GitHub App installation now governs repository authorization)
 
   # Optional
   LOG_LEVEL=info
@@ -100,6 +106,7 @@ GET  /api/getJobStatus.php  - Get job status (?id=) (public, optional session be
 POST /api/getAllJobs.php    - List jobs (X-API-Key; limit/offset pagination; optional session narrows to job)
 POST /api/updateJob.php     - Update job status (X-API-Key; optional session must match job)
 GET  /api/jobArtifact.php   - Retrieve job payload (X-API-Key; optional HMAC + session)
+GET  /api/health.php        - Health & env diagnostics (no auth; no secrets)
 ```
 
 ## Usage Examples

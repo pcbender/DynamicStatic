@@ -76,7 +76,7 @@ GITHUB_APP_PRIVATE_KEY=../weaver-private.pem
 GITHUB_WEBHOOK_SECRET=optional_webhook_secret
 
 # Repository Allow List (JSON array)
-WEAVER_ALLOWLIST=[{"owner":"o","repo":"r"}]
+; (Allowlist removed – repository authorization delegated to GitHub App installation)
 
 # Optional / Advanced
 ALLOWED_ORIGINS=https://chat.openai.com,http://localhost:3000

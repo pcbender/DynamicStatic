@@ -1,7 +1,6 @@
 <?php
 require_once __DIR__ . '/../bootstrap.php';
 require_once __DIR__ . '/auth_api_key.php';
-require_once __DIR__ . '/allowlist.php';
 require_once __DIR__ . '/github_app_client.php';
 require_once __DIR__ . '/session.php';
 require_once __DIR__ . '/db.php';
@@ -49,7 +48,7 @@ if (is_array($payload)) {
     $branch = trim($deployment['branch'] ?? '');
     if (!$owner || !$repo || !isset($payload['metadata']) || !isset($payload['content'])) { json_out(['error'=>'missing_fields'],400); }
     if (!preg_match('/^[A-Za-z0-9_.-]+$/', $owner) || !preg_match('/^[A-Za-z0-9_.-]+$/', $repo)) { json_out(['error'=>'invalid_owner_repo'],400); }
-    if (!ownerRepoAllowed($owner, $repo)) { json_out(['error'=>'repo_not_allowed'],403); }
+    // Allowlist removed; rely on GitHub App installation / auth for repo authorization.
     if (isset($payload['assets'])) { $payload['assets'] = validateAssets($payload['assets']); }
     if (!$branch || preg_match('/[^\w\-\/]/', $branch)) { $branch = 'dynstatic/' . date('Ymd-His') . '-' . bin2hex(random_bytes(3)); $payload['deployment']['branch']=$branch; }
 } else {
@@ -60,7 +59,7 @@ if (is_array($payload)) {
     $article = $input['article'] ?? null;
     if (!$owner || !$repo || !$article) { json_out(['error'=>'missing_fields'],400); }
     if (!preg_match('/^[A-Za-z0-9_.-]+$/', $owner) || !preg_match('/^[A-Za-z0-9_.-]+$/', $repo)) { json_out(['error'=>'invalid_owner_repo'],400); }
-    if (!ownerRepoAllowed($owner, $repo)) { json_out(['error'=>'repo_not_allowed'],403); }
+    // Allowlist removed; rely on GitHub App installation / auth for repo authorization.
     if (!$branch || preg_match('/[^\w\-\/]/', $branch)) { $branch = 'dynstatic/' . date('Ymd-His') . '-' . bin2hex(random_bytes(3)); }
     $payload = [
         'type' => 'article',
@@ -71,9 +70,12 @@ if (is_array($payload)) {
 }
 
 try {
-    $token = getInstallationToken($owner, $repo);
-    $gh = githubClientForInstallation($token);
-    // TODO implement actual branch / commit / PR creation.
+    $ghConfigured = env('GITHUB_APP_ID') && env('GITHUB_APP_PRIVATE_KEY');
+    if ($ghConfigured) {
+        $token = getInstallationToken($owner, $repo);
+        $gh = githubClientForInstallation($token);
+        // TODO implement actual branch / commit / PR creation.
+    }
     $job = insertJob(['status' => 'pending', 'payload' => $payload]);
     $session = issueSession($job['id'], $owner, $repo, 1800);
     json_out(['status' => 'success', 'job_id' => $job['id'], 'weaver_session' => $session]);

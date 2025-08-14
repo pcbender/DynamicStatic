@@ -4,7 +4,6 @@
 
 $apiFile = __DIR__ . '/../api/insertJob.php';
 $_ENV['WEAVER_API_KEY'] = 'test-key';
-$_ENV['WEAVER_ALLOWLIST'] = '[{"owner":"o","repo":"r"}]';
 $_ENV['WEAVER_SESSION_JWT_SECRET'] = 'secret';
 
 function mustContain($haystack, $needle, $msg) {

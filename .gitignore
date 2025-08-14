@@ -15,7 +15,6 @@ ehthumbs.db
 Desktop.ini
 
 **/.env
-**/.env.local
 **/.env.production
 **/**/*.pem
 

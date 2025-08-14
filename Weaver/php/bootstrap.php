@@ -31,10 +31,45 @@ if (!function_exists('env')) {
 }
 
 try {
-    $root = dirname(__DIR__);
-    $envFile = getenv('WEAVER_ENV_FILE') ?: '.env';
+    $root = dirname(__DIR__); // Weaver/
     if (class_exists(Dotenv::class)) {
-        Dotenv::createImmutable($root, $envFile)->safeLoad();
+        $host = $_SERVER['HTTP_HOST'] ?? ($_SERVER['SERVER_NAME'] ?? '');
+        $isLocalHost = stripos($host, 'localhost') !== false || stripos($host, '127.0.0.1') !== false;
+        $explicit = getenv('WEAVER_ENV_FILE') ?: null; // overrides all
+        $candidateFiles = [];
+        if ($explicit) {
+            $candidateFiles[] = $explicit; // user override
+        } elseif ($isLocalHost) {
+            // Local dev preference order
+            $candidateFiles[] = '.env.local';
+            $candidateFiles[] = '.env'; // fallback
+        } else {
+            // Production preference order
+            $candidateFiles[] = '.env';
+            $candidateFiles[] = '.env.local'; // (ignored in prod if missing)
+        }
+        $loaded = false;
+        foreach ($candidateFiles as $file) {
+            if ($loaded) break;
+            // Search Weaver/ first then repo root
+            $paths = [$root, dirname($root)];
+            foreach ($paths as $path) {
+                $full = $path . DIRECTORY_SEPARATOR . $file;
+                if (is_file($full)) {
+                    Dotenv::createImmutable($path, $file)->safeLoad();
+                    $loaded = true;
+                    if (!defined('WEAVER_ENV_FILE_LOADED')) {
+                        define('WEAVER_ENV_FILE_LOADED', $full);
+                        $mode = $explicit ? 'explicit' : ($isLocalHost ? 'local' : 'production');
+                        define('WEAVER_ENV_MODE', $mode);
+                    }
+                    break;
+                }
+            }
+        }
+        if (!$loaded && !defined('WEAVER_ENV_MODE')) {
+            define('WEAVER_ENV_MODE', $explicit ? 'explicit-missing' : 'none');
+        }
     }
     // Existing config (legacy OAuth) may be referenced elsewhere; keep init but swallow errors.
     try { WeaverConfig::getInstance(); } catch (Throwable $ignored) {}
