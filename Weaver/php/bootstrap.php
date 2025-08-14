@@ -1,9 +1,6 @@
 <?php
-// Unified bootstrap: autoload, dotenv, helpers.
-$autoload = __DIR__ . '/vendor/autoload.php';
-if (file_exists($autoload)) {
-    require_once $autoload;
-}
+// Unified bootstrap: class loader, dotenv, helpers.
+require_once __DIR__ . '/classloader.php';
 
 use Dotenv\Dotenv;
 use Weaver\WeaverConfig;
@@ -88,5 +85,25 @@ if (!function_exists('json_out')) {
         header('Content-Type: application/json');
         echo json_encode($data);
         exit;
+    }
+}
+
+// Helper: report configuration completeness (used by health endpoint)
+if (!function_exists('weaver_config_status')) {
+    function weaver_config_status(): array {
+        $requiredKeys = [
+            'WEAVER_API_KEY',
+            'WEAVER_SESSION_JWT_SECRET',
+            'GITHUB_APP_ID',
+            'GITHUB_APP_CLIENT_ID',
+            'GITHUB_APP_PRIVATE_KEY',
+            'GITHUB_WEBHOOK_SECRET'
+        ];
+        $presence = [];
+        foreach ($requiredKeys as $k) { $presence[$k] = env($k) ? true : false; }
+        return [
+            'presence' => $presence,
+            'all_set' => !in_array(false, $presence, true)
+        ];
     }
 }
