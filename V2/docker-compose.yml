@@ -1,12 +1,18 @@
 version: "3.9"
 services:
   weaver-php:
-    build: ./docker/php
+    build: ../docker/php
     container_name: weaver-php
+    working_dir: /var/www/html
     env_file:
-      - ./V2/Weaver/php/.env
+      - ./Weaver/php/.env
+    environment:
+      AUTO_COMPOSER_INSTALL: "true"
+      AUTO_MIGRATE: "true"
     volumes:
-      - ./V2/Weaver/php:/var/www/html:cached
+      - ./Weaver/php:/var/www/html:cached
+    depends_on:
+      - weaver-db
     networks: [weaver-net]
 
   weaver-web:
@@ -16,8 +22,28 @@ services:
     ports:
       - "8080:80"
     volumes:
-      - ./V2/Weaver/php:/var/www/html:ro
-      - ./docker/nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
+      - ./Weaver/php:/var/www/html:ro
+      - ../docker/nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
+    networks: [weaver-net]
+
+  weaver-db:
+    image: mysql:8.0
+    container_name: weaver-db
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: weaver
+      MYSQL_USER: weaver
+      MYSQL_PASSWORD: weaver
+      MYSQL_ROOT_PASSWORD: root
+    ports:
+      - "3306:3306"
+    volumes:
+      - weaver-db-data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
     networks: [weaver-net]
 
   weaver-tunnel:
@@ -25,9 +51,12 @@ services:
     container_name: weaver-tunnel
     depends_on: [weaver-web]
     env_file:
-      - ./V2/Weaver/php/.env
+      - ./Weaver/php/.env
     command: http weaver-web:80
     networks: [weaver-net]
+
+volumes:
+  weaver-db-data: {}
 
 networks:
   weaver-net: {}
