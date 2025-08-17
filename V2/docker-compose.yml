@@ -1,16 +1,16 @@
 version: "3.9"
 services:
   weaver-php:
-    build: ../docker/php
+    build: ./infra/docker/php
     container_name: weaver-php
     working_dir: /var/www/html
     env_file:
-      - ./Weaver/php/.env
+      - ./apps/weaver-laravel/.env
     environment:
       AUTO_COMPOSER_INSTALL: "true"
       AUTO_MIGRATE: "true"
     volumes:
-      - ./Weaver/php:/var/www/html:cached
+      - ./apps/weaver-laravel:/var/www/html:cached
     secrets:
       - app_key
       - google_client_secret
@@ -27,8 +27,8 @@ services:
     ports:
       - "8080:80"
     volumes:
-      - ./Weaver/php:/var/www/html:ro
-      - ../docker/nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
+      - ./apps/weaver-laravel:/var/www/html:ro
+      - ./infra/docker/nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
     networks: [weaver-net]
 
   weaver-db:
@@ -59,7 +59,7 @@ services:
     container_name: weaver-tunnel
     depends_on: [weaver-web]
     env_file:
-      - ./Weaver/php/.env
+      - ./apps/weaver-laravel/.env
     command: /bin/sh -c "ngrok config add-authtoken $(cat /run/secrets/ngrok_authtoken) && ngrok http weaver-web:80"
     secrets:
       - ngrok_authtoken

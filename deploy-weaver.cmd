@@ -41,7 +41,7 @@ cd ..\..
 
 echo.
 echo Syncing files to server...
-echo Command: rsync -avz --progress --delete --exclude-from=deploy-excludes.txt "Weaver/php/" "%USER%@%SERVER%:%REMOTE_PATH%/"
+echo Command: rsync -avz --progress --delete --exclude-from=deploy-excludes.txt "apps/weaver-laravel/" "%USER%@%SERVER%:%REMOTE_PATH%/"
 echo.
 
 REM Create exclude file for rsync
@@ -64,10 +64,10 @@ if errorlevel 1 (
     echo rsync not found! You have these options:
     echo.
     echo Option 1: Use Windows Subsystem for Linux ^(WSL^)
-    echo   wsl rsync -avz --progress --delete --exclude-from=deploy-excludes.txt "Weaver/php/" "%USER%@%SERVER%:%REMOTE_PATH%/"
+    echo   wsl rsync -avz --progress --delete --exclude-from=deploy-excludes.txt "apps/weaver-laravel/" "%USER%@%SERVER%:%REMOTE_PATH%/"
     echo.
     echo Option 2: Use Git Bash
-    echo   "C:\Program Files\Git\usr\bin\rsync.exe" -avz --progress --delete --exclude-from=deploy-excludes.txt "Weaver/php/" "%USER%@%SERVER%:%REMOTE_PATH%/"
+    echo   "C:\Program Files\Git\usr\bin\rsync.exe" -avz --progress --delete --exclude-from=deploy-excludes.txt "apps/weaver-laravel/" "%USER%@%SERVER%:%REMOTE_PATH%/"
     echo.
     echo Option 3: Manual SCP upload
     echo   scp -r Weaver\php\* %USER%@%SERVER%:%REMOTE_PATH%/
@@ -80,7 +80,7 @@ if errorlevel 1 (
 )
 
 REM Run rsync
-rsync -avz --progress --delete --exclude-from=deploy-excludes.txt "Weaver/php/" "%USER%@%SERVER%:%REMOTE_PATH%/"
+rsync -avz --progress --delete --exclude-from=deploy-excludes.txt "apps/weaver-laravel/" "%USER%@%SERVER%:%REMOTE_PATH%/"
 if errorlevel 1 (
     echo Error: File sync failed!
     echo.

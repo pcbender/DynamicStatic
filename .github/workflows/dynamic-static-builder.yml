@@ -31,14 +31,14 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Render and write files
+    - name: Render and write files
         id: render
         run: |
-          node scripts/render.js /tmp/article.json
+      node tools/scripts/render.js /tmp/article.json
           # Extract metadata for commit message (output is set by render.js)
           echo "Files rendered successfully"
 
-      - name: Create branch, commit, and PR
+  - name: Create branch, commit, and PR
         uses: peter-evans/create-pull-request@v6
         with:
           commit-message: "feat(content): add new content (job: ${{ github.event.client_payload.job_id }})"
