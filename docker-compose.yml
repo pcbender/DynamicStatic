@@ -74,16 +74,16 @@ networks:
 
 secrets:
   app_key:
-    file: ./V2/secrets/app_key.txt
+    file: ./infra/secrets/app_key.txt
   google_client_secret:
-    file: ./V2/secrets/google_client_secret.txt
+    file: ./infra/secrets/google_client_secret.txt
   microsoft_client_secret:
-    file: ./V2/secrets/microsoft_client_secret.txt
+    file: ./infra/secrets/microsoft_client_secret.txt
   db_password:
-    file: ./V2/secrets/db_password.txt
+    file: ./infra/secrets/db_password.txt
   mysql_root_password:
-    file: ./V2/secrets/mysql_root_password.txt
+    file: ./infra/secrets/mysql_root_password.txt
   ngrok_authtoken:
-    file: ./V2/secrets/ngrok_authtoken.txt
+    file: ./infra/secrets/ngrok_authtoken.txt
   github_app_private_key:
     file: ./infra/secrets/github-app.pem

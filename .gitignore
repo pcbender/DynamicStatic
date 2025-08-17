@@ -23,4 +23,5 @@ project-config.json
 V2/secrets/*
 !V2/secrets/README.md
 V2/
-infra/secrets/
+infra/secrets/*
+!infra/secrets/README.md
