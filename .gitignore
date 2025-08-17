@@ -22,3 +22,5 @@ Desktop.ini
 project-config.json
 V2/secrets/*
 !V2/secrets/README.md
+V2/
+infra/secrets/

@@ -26,19 +26,20 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version-file: '.nvmrc'
+          cache: 'npm'
 
       - name: Install dependencies
         run: npm ci
 
-    - name: Render and write files
+      - name: Render and write files
         id: render
+        working-directory: tools/scripts
         run: |
-      node tools/scripts/render.js /tmp/article.json
-          # Extract metadata for commit message (output is set by render.js)
+          node render.js /tmp/article.json
           echo "Files rendered successfully"
 
-  - name: Create branch, commit, and PR
+      - name: Create branch, commit, and PR
         uses: peter-evans/create-pull-request@v6
         with:
           commit-message: "feat(content): add new content (job: ${{ github.event.client_payload.job_id }})"

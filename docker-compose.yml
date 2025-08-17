@@ -9,6 +9,7 @@ services:
     environment:
       AUTO_COMPOSER_INSTALL: "true"
       AUTO_MIGRATE: "true"
+      GITHUB_APP_PRIVATE_KEY_PATH: /run/secrets/github_app_private_key
     volumes:
       - ./apps/weaver-laravel:/var/www/html:cached
     secrets:
@@ -16,6 +17,7 @@ services:
       - google_client_secret
       - microsoft_client_secret
       - db_password
+      - github_app_private_key
     depends_on:
       - weaver-db
     networks: [weaver-net]
@@ -84,3 +86,5 @@ secrets:
     file: ./V2/secrets/mysql_root_password.txt
   ngrok_authtoken:
     file: ./V2/secrets/ngrok_authtoken.txt
+  github_app_private_key:
+    file: ./infra/secrets/github-app.pem
