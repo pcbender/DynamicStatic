@@ -20,3 +20,5 @@ Desktop.ini
 
 .github/ai-review-history-local.json
 project-config.json
+V2/secrets/*
+!V2/secrets/README.md

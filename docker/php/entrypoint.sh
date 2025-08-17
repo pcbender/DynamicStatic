@@ -10,6 +10,25 @@ AUTO_MIGRATE=${AUTO_MIGRATE:-true}
 DB_WAIT_RETRIES=${DB_WAIT_RETRIES:-20}
 DB_WAIT_DELAY=${DB_WAIT_DELAY:-2}
 
+# Load secrets (if present) into environment BEFORE Laravel boots (php-fpm start)
+load_secret() {
+  secret_file="$1"; var_name="$2"
+  if [ -f "$secret_file" ]; then
+    val=$(cat "$secret_file" | tr -d '\r' | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
+    if [ -n "$val" ]; then
+      export "$var_name"="$val"
+      echo "[entrypoint] Loaded secret for $var_name"
+    fi
+  fi
+}
+
+# Map secret files to env vars
+load_secret /run/secrets/app_key APP_KEY
+load_secret /run/secrets/google_client_secret GOOGLE_CLIENT_SECRET
+load_secret /run/secrets/microsoft_client_secret MICROSOFT_CLIENT_SECRET
+load_secret /run/secrets/db_password DB_PASSWORD
+load_secret /run/secrets/mysql_root_password MYSQL_ROOT_PASSWORD
+
 if [ "$AUTO_COMPOSER_INSTALL" = "true" ] && [ -f composer.json ]; then
   if [ ! -f vendor/autoload.php ]; then
     echo "[entrypoint] Running composer install..."

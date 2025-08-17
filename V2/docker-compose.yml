@@ -11,6 +11,11 @@ services:
       AUTO_MIGRATE: "true"
     volumes:
       - ./Weaver/php:/var/www/html:cached
+    secrets:
+      - app_key
+      - google_client_secret
+      - microsoft_client_secret
+      - db_password
     depends_on:
       - weaver-db
     networks: [weaver-net]
@@ -33,12 +38,15 @@ services:
     environment:
       MYSQL_DATABASE: weaver
       MYSQL_USER: weaver
-      MYSQL_PASSWORD: weaver
-      MYSQL_ROOT_PASSWORD: root
+      MYSQL_PASSWORD_FILE: /run/secrets/db_password
+      MYSQL_ROOT_PASSWORD_FILE: /run/secrets/mysql_root_password
     ports:
       - "3306:3306"
     volumes:
       - weaver-db-data:/var/lib/mysql
+    secrets:
+      - db_password
+      - mysql_root_password
     healthcheck:
       test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
       interval: 10s
@@ -52,7 +60,9 @@ services:
     depends_on: [weaver-web]
     env_file:
       - ./Weaver/php/.env
-    command: http weaver-web:80
+    command: /bin/sh -c "ngrok config add-authtoken $(cat /run/secrets/ngrok_authtoken) && ngrok http weaver-web:80"
+    secrets:
+      - ngrok_authtoken
     networks: [weaver-net]
 
 volumes:
@@ -60,3 +70,17 @@ volumes:
 
 networks:
   weaver-net: {}
+
+secrets:
+  app_key:
+    file: ./secrets/app_key.txt
+  google_client_secret:
+    file: ./secrets/google_client_secret.txt
+  microsoft_client_secret:
+    file: ./secrets/microsoft_client_secret.txt
+  db_password:
+    file: ./secrets/db_password.txt
+  mysql_root_password:
+    file: ./secrets/mysql_root_password.txt
+  ngrok_authtoken:
+    file: ./secrets/ngrok_authtoken.txt
