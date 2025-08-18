@@ -71,36 +71,20 @@ The Dynamic Static AI CMS implements a four-actor architecture based on Relation
 ## Repository Layout
 
 ```
-dist/                   Built static site (HTML, CSS, images, JSON data)
-templates/              HTML templates for new pages
-scripts/                Node.js utilities and tools
-  build.js             Updates related article metadata using TF-IDF
-  ai-review.js         AI review system for GitHub integration
-  Base64Encoding.js    OAuth flow testing utility
-  OpusProcessor.js     Content processing and publishing
-GPT/                    Custom GPT (Echo) configuration
-  Configuration.md     GPT instructions and behavior definition
-  openapi.json         API specification for Weaver integration
-  project-config.json  Default project settings for publishing
-  README.md            Echo setup and configuration guide
-Weaver/                 Multi-language backend services
-  README.md            Multi-language implementation guide
-  php/                 PHP implementation (production ready)
-    api/               REST API endpoints
-      auth.php         Authentication and authorization
-      getAllJobs.php   Job listing endpoint
-      insertJob.php    Job creation endpoint
-      publish.php      Content publishing endpoint (deprecated)
-    oauth/             OAuth 2.0 implementation
-      authorize.php    OAuth authorization endpoint
-      google_callback.php Google OAuth callback handler
-      token.php        Token exchange endpoint
-    src/               Core PHP classes
-      Service/         Service layer (OAuth, JWT)
-  node/                Node.js implementation (planned)
-  dotnet/              .NET implementation (planned)
-run-local.*            Helper scripts for different platforms
+apps/
+  weaver-laravel/       Laravel application (Weaver service)
+dist/                  Built static site artifacts
+infra/
+  docker/              Dockerfile & nginx config
+tools/
+  scripts/             Node.js workflow & automation scripts (Opus helpers)
+  gpt/                 Custom GPT (Echo) configuration & OpenAPI spec
+  postman/             Postman collections
+templates/             HTML templates
+V2/                    (Legacy location, ignored)
 ```
+
+_VS Code configs updated; old V2/ path is ignored and not referenced._
 
 ## Getting Started
 

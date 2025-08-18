@@ -100,7 +100,7 @@ $rsyncArgs = @(
     "--progress", 
     "--delete",
     "--exclude-from=$excludeFile",
-    "Weaver/php/",
+    "apps/weaver-laravel/",
     "${User}@${Server}:${RemotePath}/"
 )
 
