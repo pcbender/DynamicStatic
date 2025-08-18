@@ -22,3 +22,9 @@
 Homestead.json
 Homestead.yaml
 Thumbs.db
+
+# Local dev artifacts
+/.env.bak
+/.env.*
+/database/database.sqlite
+/storage/database/
