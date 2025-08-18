@@ -11,9 +11,9 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('job_payloads', function (Blueprint $table) {
+        Schema::create('weaver_job_payloads', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('job_id')->constrained('jobs')->onDelete('cascade');
+            $table->foreignId('job_id')->constrained('weaver_jobs')->onDelete('cascade');
             $table->json('payload');
             $table->timestamps();
         });
@@ -24,6 +24,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('job_payloads');
+    Schema::dropIfExists('weaver_job_payloads');
     }
 };

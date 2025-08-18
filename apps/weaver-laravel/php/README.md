@@ -70,7 +70,7 @@ Fields stored (non-secret): name, owner, repo, GitHub App ID, GitHub App Client 
 
 1. Bring up containers:
    ```bash
-   docker compose -f V2/docker-compose.yml up --build
+   docker compose up --build
    ```
 2. Ensure SQLite exists (default created at `database/database.sqlite`).
 3. Visit `http://localhost:8080`, register, complete Project Setup form.
@@ -106,7 +106,7 @@ Authenticated users without a Project trying to access protected routes (dashboa
 
 1. Start containers:
    ```bash
-   docker compose -f V2/docker-compose.yml up --build
+   docker compose up --build
    ```
 2. Prepare database (inside php container):
    ```bash
@@ -202,7 +202,7 @@ Approx 2–3 minute verification inside Docker.
 Checklist:
 1. Start stack (build + up):
    ```bash
-   docker compose -f V2/docker-compose.yml up --build
+   docker compose up --build
    ```
    Expect: containers start; web listens on :8080.
 2. Prepare DB (inside PHP container):
