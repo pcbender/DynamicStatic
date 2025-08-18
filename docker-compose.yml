@@ -9,7 +9,7 @@ services:
       AUTO_COMPOSER_INSTALL: "true"
       AUTO_MIGRATE: "true"
       GITHUB_APP_PRIVATE_KEY_PATH: /run/secrets/github_app_private_key
-      APP_KEY: base64:uaeKOjhW06JHRNLVFd5DSeLkxkJsrCPP3naS5IWuKHQ=
+  # APP_KEY is injected at runtime from /run/secrets/app_key by entrypoint.sh (load_secret); do NOT hardcode here.
     volumes:
       - ./apps/weaver-laravel:/var/www/html:cached
     secrets:
