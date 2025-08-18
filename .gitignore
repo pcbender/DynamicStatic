@@ -25,3 +25,11 @@ V2/secrets/*
 V2/
 infra/secrets/*
 !infra/secrets/README.md
+
+# Local TLS certs (keep placeholder)
+/infra/certs/*
+!/infra/certs/README.md
+
+# Local secrets (keep placeholder)
+/infra/secrets/*
+!/infra/secrets/README.md

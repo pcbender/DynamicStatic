@@ -2,6 +2,17 @@
 
 Dynamic Static AI CMS is an intelligent content management system that combines static site generation with AI-powered content creation and management. It features a custom GPT with OpenAPI integration, OAuth authentication via Google, and seamless GitHub workflow automation.
 
+## Local Dev Quickstart
+
+Run this from repo root to bootstrap certs, start containers, migrate DB, run smoke test, and open the app.
+
+```bash
+./tools/scripts/mkcert-local.sh && docker compose up -d && \
+docker compose exec weaver-php php artisan migrate && \
+docker compose exec weaver-php php artisan weaver:smoke --demo && \
+open https://localhost
+```
+
 ## System Actors
 
 The DS CMS workflow is orchestrated by four distinct actors, each playing a crucial role in the Relational Design theory's principle of Human/AI co-creation:
