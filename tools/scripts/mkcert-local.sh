@@ -18,3 +18,10 @@ openssl req -x509 -nodes -days 365 \
   -subj "/C=US/ST=Local/L=Local/O=DynamicStatic/OU=Dev/CN=localhost"
 
 echo "Created $CRT and $KEY"
+
+# Ensure Laravel APP_KEY exists for dev
+if [ -x "./tools/scripts/ensure-app-key.sh" ]; then
+  ./tools/scripts/ensure-app-key.sh
+else
+  echo "Warning: tools/scripts/ensure-app-key.sh not found; skipping APP_KEY guard."
+fi
