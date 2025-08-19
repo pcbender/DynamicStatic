@@ -12,6 +12,9 @@ permissions:
 jobs:
   light-review:
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: tools/scripts
     steps:
       - uses: actions/checkout@v4
         with:
@@ -28,19 +31,22 @@ jobs:
         continue-on-error: true
 
       - uses: actions/setup-node@v4
-        with: { node-version: '20' }
+        with:
+          node-version-file: '.nvmrc'
+          cache: 'npm'
 
-      - run: npm ci
+      - name: Install dependencies
+        run: npm ci
 
       - name: Run AI Light Review
         env:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           GITHUB_TOKEN: ${{ secrets.AI_REVIEW_PAT || secrets.GITHUB_TOKEN }}
-        run: node scripts/ai-review.js --mode=light
+        run: node ai-review.js --mode=light
 
       # Store the current commit SHA so later workflow runs can pick it up.
       - name: Store tracking ID
-        run: node scripts/OpusProcessor.js --store=${{ github.sha }}
+        run: node OpusProcessor.js --store=${{ github.sha }}
 
       # Upload the tracking ID so it persists outside this ephemeral runner.
       - name: Upload tracking ID artifact

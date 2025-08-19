@@ -12,7 +12,7 @@ REMOTE_PATH=${3:-"/home/pcbender/webbness.net"}
 URL=${4:-"https://webbness.net"}
 
 # Local paths
-LOCAL_PHP_PATH="./Weaver/php"
+LOCAL_PHP_PATH="./apps/weaver-laravel"
 LOCAL_ENV_PROD="./Weaver/.env.production"
 
 echo "Deploying Weaver PHP to $USER@$SERVER:$REMOTE_PATH"

@@ -1,0 +1,196 @@
+name: CI • Review → Build → Deploy
+
+on:
+  push:
+    branches: [develop, main]
+    tags:
+      - 'v*.*.*'
+  pull_request:
+    branches: [develop, main]
+
+permissions:
+  contents: read
+  pull-requests: write
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  NODE_VERSION: '20'
+  AI_REVIEW_MODE: 'light' # switch to 'deep' on main if desired
+  AI_REVIEW_SCRIPT: tools/scripts/scripts/ai-review.js
+
+jobs:
+  ai-review:
+    name: AI Code Review
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Verify review script
+        run: |
+          ls -la
+          echo "Expecting: $AI_REVIEW_SCRIPT"
+          test -f "$AI_REVIEW_SCRIPT" && echo "Found $AI_REVIEW_SCRIPT" || { echo "Missing $AI_REVIEW_SCRIPT"; exit 1; }
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install deps
+        run: npm ci
+      - name: Run AI review
+        id: aireview
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          AI_REVIEW_MODE: ${{ env.AI_REVIEW_MODE }}
+        run: |
+          node "$AI_REVIEW_SCRIPT" --mode "$AI_REVIEW_MODE" | tee review.out
+          if grep -q "STATUS: OK" review.out; then
+            echo "clean=true" >> $GITHUB_OUTPUT
+          else
+            echo "clean=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Comment result on PR
+        if: github.event_name == 'pull_request'
+        uses: marocchino/sticky-pull-request-comment@v2
+        with:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          header: ai-review
+          message: |
+            **AI Review (${AI_REVIEW_MODE})** → ${{ steps.aireview.outputs.clean == 'true' && 'OK' || 'Needs attention' }}
+
+    outputs:
+      clean: ${{ steps.aireview.outputs.clean }}
+
+  build:
+    name: Build site
+    needs: [ai-review]
+    if: needs.ai-review.outputs.clean == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install deps
+        run: npm ci
+
+      - name: Build
+        run: npm run build:site
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: site-dist
+          path: dist
+          if-no-files-found: error
+
+  # DEV: push to develop branch
+  deploy-dev:
+    name: Deploy to DEV (develop → dev.dynamicstatic.net)
+    needs: [build]
+    if: |
+      needs.ai-review.outputs.clean == 'true' &&
+      startsWith(github.ref, 'refs/heads/develop')
+    runs-on: ubuntu-latest
+    environment:
+      name: dev
+      url: https://dev.dynamicstatic.net/
+    steps:
+      - name: Download artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: site-dist
+          path: dist
+
+      - name: Write SSH key
+        run: |
+          echo "${{ secrets.SSH_PRIVATE_KEY_DEV }}" > key_dev
+          chmod 600 key_dev
+
+      - name: Write known_hosts
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.SSH_KNOWN_HOSTS_DEV }}" >> ~/.ssh/known_hosts
+          chmod 600 ~/.ssh/known_hosts
+
+      - name: Rsync to DEV webroot
+        run: |
+          rsync -az --delete \
+            -e "ssh -i key_dev -p ${{ secrets.SSH_PORT_DEV || 22 }}" \
+            dist/ ${{ secrets.SSH_USER_DEV }}@${{ secrets.SSH_HOST_DEV }}:${{ secrets.WEBROOT_DEV }}
+
+  # PROD guard: ensure the tag points to a commit that is on main
+  verify-prod-tag:
+    name: Verify prod tag targets main
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/v')
+    outputs:
+      ok: ${{ steps.check.outputs.ok }}
+    steps:
+      - name: Checkout (full history)
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Check tag ancestry
+        id: check
+        run: |
+          git fetch origin main
+          TAG_SHA="$(git rev-parse $GITHUB_REF)"
+          if git merge-base --is-ancestor "$TAG_SHA" origin/main; then
+            echo "ok=true" >> "$GITHUB_OUTPUT"
+            echo "Tag points to a commit on main."
+          else
+            echo "ok=false" >> "$GITHUB_OUTPUT"
+            echo "ERROR: Tag does not point to a commit on main."
+            exit 1
+          fi
+
+  # PROD: release tags v*.*.* that are on main
+  deploy-prod:
+    name: Deploy to PROD (tags v*.*.* → dynamicstatic.net)
+    needs: [build, verify-prod-tag]
+    if: |
+      needs.ai-review.outputs.clean == 'true' &&
+      needs.verify-prod-tag.outputs.ok == 'true' &&
+      startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    environment:
+      name: production
+      url: https://dynamicstatic.net/
+    steps:
+      - name: Download artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: site-dist
+          path: dist
+
+      - name: Write SSH key
+        run: |
+          echo "${{ secrets.SSH_PRIVATE_KEY_PROD }}" > key_prod
+          chmod 600 key_prod
+
+      - name: Write known_hosts
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.SSH_KNOWN_HOSTS_PROD }}" >> ~/.ssh/known_hosts
+          chmod 600 ~/.ssh/known_hosts
+
+      - name: Rsync to PROD webroot
+        run: |
+          rsync -az --delete \
+            -e "ssh -i key_prod -p ${{ secrets.SSH_PORT_PROD || 22 }}" \
+            dist/ ${{ secrets.SSH_USER_PROD }}@${{ secrets.SSH_HOST_PROD }}:${{ secrets.WEBROOT_PROD }}

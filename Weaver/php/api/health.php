@@ -6,16 +6,12 @@ $envLoaded = defined('WEAVER_ENV_FILE_LOADED') ? basename(WEAVER_ENV_FILE_LOADED
 $mode = defined('WEAVER_ENV_MODE') ? WEAVER_ENV_MODE : 'unknown';
 
 // Surface minimal config signals (presence only, not values)
-$signals = [
-  'api_key_set' => env('WEAVER_API_KEY') ? true : false,
-  'session_secret_set' => env('WEAVER_SESSION_JWT_SECRET') ? true : false,
-  'github_app_id_set' => env('GITHUB_APP_ID') ? true : false,
-];
+$config = function_exists('weaver_config_status') ? weaver_config_status() : ['presence'=>[], 'all_set'=>false];
 
 json_out([
   'status' => 'ok',
   'mode' => $mode,
   'env_file' => $envLoaded,
-  'signals' => $signals,
+  'config' => $config,
   'timestamp' => gmdate('c')
 ]);
