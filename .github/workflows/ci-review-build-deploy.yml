@@ -16,6 +16,10 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
+defaults:
+  run:
+    working-directory: DynamicStatic
+
 env:
   NODE_VERSION: '20'
   AI_REVIEW_MODE: 'light' # switch to 'deep' on main if desired
@@ -27,6 +31,11 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
+      - name: Verify review script
+        run: |
+          ls -la
+          test -f scripts/ai-review.js && echo "Found ai-review.js" || { echo "Missing scripts/ai-review.js"; exit 1; }
 
       - name: Setup Node
         uses: actions/setup-node@v4
