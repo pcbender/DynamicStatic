@@ -9,7 +9,7 @@ Files expected (create manually):
   db_password.txt
   mysql_root_password.txt
   ngrok_authtoken.txt
-  github-app.pem   (GitHub App private key)
+  github_app_private_key.pem   (GitHub App private key)
 
 All are referenced by docker-compose via Docker secrets.
 
