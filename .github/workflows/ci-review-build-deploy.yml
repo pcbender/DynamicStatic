@@ -16,13 +16,10 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
-defaults:
-  run:
-    working-directory: DynamicStatic
-
 env:
   NODE_VERSION: '20'
   AI_REVIEW_MODE: 'light' # switch to 'deep' on main if desired
+  AI_REVIEW_SCRIPT: tools/scripts/scripts/ai-review.js
 
 jobs:
   ai-review:
@@ -35,7 +32,8 @@ jobs:
       - name: Verify review script
         run: |
           ls -la
-          test -f scripts/ai-review.js && echo "Found ai-review.js" || { echo "Missing scripts/ai-review.js"; exit 1; }
+          echo "Expecting: $AI_REVIEW_SCRIPT"
+          test -f "$AI_REVIEW_SCRIPT" && echo "Found $AI_REVIEW_SCRIPT" || { echo "Missing $AI_REVIEW_SCRIPT"; exit 1; }
 
       - name: Setup Node
         uses: actions/setup-node@v4
@@ -45,7 +43,6 @@ jobs:
 
       - name: Install deps
         run: npm ci
-
       - name: Run AI review
         id: aireview
         env:
@@ -53,7 +50,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           AI_REVIEW_MODE: ${{ env.AI_REVIEW_MODE }}
         run: |
-          node scripts/ai-review.js --mode "$AI_REVIEW_MODE" | tee review.out
+          node "$AI_REVIEW_SCRIPT" --mode "$AI_REVIEW_MODE" | tee review.out
           if grep -q "STATUS: OK" review.out; then
             echo "clean=true" >> $GITHUB_OUTPUT
           else
