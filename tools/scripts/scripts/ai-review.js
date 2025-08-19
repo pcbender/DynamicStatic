@@ -725,3 +725,28 @@ if (isLocal) {
 } else {
   main().catch(err => setFailed(err.message || String(err)));
 }
+
+// --- CI status emission (append near the end of the script) ---
+try {
+  // If your script already computes something like `summary`, `report`, or `result`,
+  // set `blocking` TRUE when the review should fail CI.
+  // Example heuristics (adjust to your data):
+  const blocking =
+    (globalThis.summary?.blockingIssues?.length ?? 0) > 0 ||
+    (globalThis.summary?.errors?.length ?? 0) > 0 ||
+    (globalThis.report?.blocking === true) ||
+    (globalThis.result?.clean === false);
+
+  if (blocking) {
+    console.log('STATUS: FAIL');
+    process.exit(1);
+  } else {
+    console.log('STATUS: OK');
+    process.exit(0);
+  }
+} catch (e) {
+  // On unexpected crash, fail closed
+  console.error('AI review status error:', e);
+  console.log('STATUS: FAIL');
+  process.exit(1);
+}
