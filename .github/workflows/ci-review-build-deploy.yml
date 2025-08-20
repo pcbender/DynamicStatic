@@ -138,9 +138,24 @@ jobs:
           fi
           echo "WEBROOT_DEV=${{ secrets.WEBROOT_DEV }}"
 
-      - name: SSH preflight
+      - name: Debug target (no secrets)
         run: |
-          ssh -i key_dev \
+          echo "HOST=${{ secrets.SSH_HOST_DEV }}"
+          echo "PORT=${{ secrets.SSH_PORT_DEV || 22 }}"
+          echo "USER=${{ secrets.SSH_USER_DEV }}"
+          echo "WEBROOT=${{ secrets.WEBROOT_DEV }}"
+
+      - name: DNS + TCP probe
+        run: |
+          set -x
+          getent hosts "${{ secrets.SSH_HOST_DEV }}" || true
+          command -v dig >/dev/null && dig +short "${{ secrets.SSH_HOST_DEV }}" || true
+          command -v nc >/dev/null && nc -vz -w 5 "${{ secrets.SSH_HOST_DEV }}" "${{ secrets.SSH_PORT_DEV || 22 }}" || true
+
+      - name: SSH preflight (verbose, short timeout)
+        run: |
+          ssh -vv -o ConnectTimeout=10 \
+            -i key_dev \
             -o IdentitiesOnly=yes -o BatchMode=yes \
             -o StrictHostKeyChecking=yes -o UserKnownHostsFile=~/.ssh/known_hosts \
             -p ${{ secrets.SSH_PORT_DEV || 22 }} \

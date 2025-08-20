@@ -50,6 +50,7 @@ The DS CMS workflow is orchestrated by four distinct actors, each playing a cruc
 - **GitHub Workflow Integration**: Seamless publishing and deployment automation
 - **TF-IDF Content Analysis**: Intelligent related article suggestions
 - **RESTful API**: Complete backend for content and job management
+- **Offline & Data Caching**: Service worker and manifest generator for fast, resilient data access
 
 ## Architecture
 
@@ -220,6 +221,16 @@ The `dist/` directory can be deployed to any static hosting service:
 - Vercel
 - AWS S3 + CloudFront
 
+#### Workflow Safety & Deploy Checks
+
+The GitHub Actions deploy jobs now include:
+- Explicit `Checkout` step before artifact download (required for scripts and config files)
+- Debug steps to print working directory and scripts for troubleshooting
+- Guard steps to assert `WEBROOT_DEV` and `WEBROOT_PROD` secrets are set and absolute
+- Hardened deploy wrapper (`scripts/safe-rsync.sh`) that checks for `.htaccess` and marker file before syncing
+
+If a deploy fails, check the workflow logs for missing files, misconfigured secrets, or permission issues. The debug steps will show the exact state of the workspace before deploy.
+
 #### HTTP Cache & Security Headers (.htaccess)
 
 During `npm run build:site` the file `public/.htaccess` is copied to `dist/.htaccess`. This file applies:
@@ -233,11 +244,19 @@ If you host on Apache, ensure `.htaccess` processing is enabled. For Nginx or ot
 
 The deploy safety script (`scripts/safe-rsync.sh`) requires that `.htaccess` exists in `dist/` (when present in `public/`) to avoid pushing a build missing critical cache headers.
 
+#### Service Worker & Manifest
+
+The build process now generates a service worker (`sw.js`) and a manifest (`data/manifest.json`) in `dist/` for offline and cache-aware data access. These files are registered automatically in top-level templates and use cache-control headers for optimal performance and reliability.
+
 ### PHP Backend
 Deploy the `Weaver/` directory to any PHP hosting service with:
 - PHP 8.0+ support
 - Composer for dependency management
 - HTTPS enabled (required for OAuth)
+
+#### Laravel Cache Table
+
+The backend now includes a migration for cache and cache_locks tables (`apps/weaver-laravel/database/migrations/2025_08_17_211405_create_cache_table.php`). Run `php artisan migrate` after pulling updates to ensure the database schema is current.
 
 ## Development Notes
 
