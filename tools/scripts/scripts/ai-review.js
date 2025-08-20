@@ -1,43 +1,14 @@
-import { setFailed, info } from '@actions/core';
-import { context, getOctokit } from '@actions/github';
-import { OpenAI } from 'openai';
-import simpleGit from 'simple-git';
-import fs from 'node:fs';
+// Deprecated stub. Use scripts/ai-review.js
 import path from 'node:path';
-import process from 'node:process';
-import { execSync } from 'child_process';
-import { encoding_for_model } from '@dqbd/tiktoken';
-
-// Configuration
-const MODE = process.argv.includes('--mode=deep') ? 'deep' : 'light';
-const SITE_DIR = (() => {
-  const f = process.argv.find(a => a.startsWith('--siteDir='));
-  return f ? f.split('=')[1] : '.';
-})();
-const CREATE_PR = process.argv.includes('--create-pr');
-const isLocal = !process.env.GITHUB_ACTIONS;
-
-// Model configuration
-const model = 'gpt-4-turbo';
-const encoding = encoding_for_model(model);
-const maxTokens = 32768; // Max tokens for gpt-4-turbo
-const reserveForResponse = 1024;
-const promptBudget = maxTokens - reserveForResponse;
-
-// System prompt
-const SYSTEM_PROMPT = `
-You are an expert reviewer for static sites built with HTML, JSON data files, and Alpine.js.
-Return a concise, actionable report with bullet points and clear headings.
-When citing, include file and approximate line numbers if present.
-
-Prioritize (in order):
-1) Correctness & Safety (broken markup, Alpine directives/x-data, event handling, security: unsafe HTML injection).
-2) Accessibility (semantic HTML, labels, contrast cues, keyboard nav, aria-* sanity).
-3) Performance for static sites (critical CSS, image sizes, caching hints, script weight, render-blocking, LCP/CLS risk).
-4) SEO basics for static (unique titles, meta, canonical, headings structure, alt text).
-5) JSON integrity (structure, null/undefined handling; propose schemas; call out content pitfalls).
-6) Authoring quality in visible text (spelling/grammar/style) — be brief, suggest edits.
-7) Release checklist (for deep mode only): sitemaps/robots, link integrity, 404s, hreflang (if any), Lighthouse/LCP notes.
+import { pathToFileURL } from 'node:url';
+console.warn('[DEPRECATED] Forwarding to scripts/ai-review.js');
+const target = path.resolve(process.cwd(), 'scripts/ai-review.js');
+import(pathToFileURL(target).href);// Deprecated: moved to scripts/ai-review.js
+import path from 'node:path';
+import { pathToFileURL } from 'node:url';
+console.warn('[DEPRECATED] Use scripts/ai-review.js instead of tools/scripts/scripts/ai-review.js');
+const target = path.resolve(process.cwd(), 'scripts/ai-review.js');
+import(pathToFileURL(target).href);
 
 Output sections (always in this order):
 - Summary

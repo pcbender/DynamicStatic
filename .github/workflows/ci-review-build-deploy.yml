@@ -28,21 +28,18 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-
-      - name: Verify review script
-        run: |
-          ls -la
-          echo "Expecting: $AI_REVIEW_SCRIPT"
-          test -f "$AI_REVIEW_SCRIPT" && echo "Found $AI_REVIEW_SCRIPT" || { echo "Missing $AI_REVIEW_SCRIPT"; exit 1; }
-
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'npm'
 
-      - name: Install deps
-        run: npm ci
+      - name: Install deps (app dir only)
+        run: npm ci --prefix DynamicStatic
+
+      - name: Verify review script
+        run: ls -la DynamicStatic/scripts && test -f DynamicStatic/scripts/ai-review.js
+
       - name: Run AI review
         id: aireview
         env:
@@ -50,7 +47,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           AI_REVIEW_MODE: ${{ env.AI_REVIEW_MODE }}
         run: |
-          node "$AI_REVIEW_SCRIPT" --mode "$AI_REVIEW_MODE" | tee review.out
+          node DynamicStatic/scripts/ai-review.js --mode "$AI_REVIEW_MODE" | tee review.out
           if grep -q "STATUS: OK" review.out; then
             echo "clean=true" >> $GITHUB_OUTPUT
           else
@@ -83,18 +80,17 @@ jobs:
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'npm'
-
-      - name: Install deps
-        run: npm ci
+      - name: Install deps (app dir only)
+        run: npm ci --prefix DynamicStatic
 
       - name: Build
-        run: npm run build:site
+        run: npm run build:site --prefix DynamicStatic
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
           name: site-dist
-          path: dist
+          path: DynamicStatic/dist
           if-no-files-found: error
 
   # DEV: push to develop branch
@@ -113,7 +109,7 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: site-dist
-          path: dist
+          path: DynamicStatic/dist
 
       - name: Write SSH key
         run: |
@@ -130,7 +126,7 @@ jobs:
         run: |
           rsync -az --delete \
             -e "ssh -i key_dev -p ${{ secrets.SSH_PORT_DEV || 22 }}" \
-            dist/ ${{ secrets.SSH_USER_DEV }}@${{ secrets.SSH_HOST_DEV }}:${{ secrets.WEBROOT_DEV }}
+            DynamicStatic/dist/ ${{ secrets.SSH_USER_DEV }}@${{ secrets.SSH_HOST_DEV }}:${{ secrets.WEBROOT_DEV }}
 
   # PROD guard: ensure the tag points to a commit that is on main
   verify-prod-tag:
@@ -176,7 +172,7 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: site-dist
-          path: dist
+          path: DynamicStatic/dist
 
       - name: Write SSH key
         run: |
@@ -193,4 +189,4 @@ jobs:
         run: |
           rsync -az --delete \
             -e "ssh -i key_prod -p ${{ secrets.SSH_PORT_PROD || 22 }}" \
-            dist/ ${{ secrets.SSH_USER_PROD }}@${{ secrets.SSH_HOST_PROD }}:${{ secrets.WEBROOT_PROD }}
+            DynamicStatic/dist/ ${{ secrets.SSH_USER_PROD }}@${{ secrets.SSH_HOST_PROD }}:${{ secrets.WEBROOT_PROD }}
