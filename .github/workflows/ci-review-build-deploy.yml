@@ -121,6 +121,20 @@ jobs:
           echo "${{ secrets.SSH_KNOWN_HOSTS_DEV }}" >> ~/.ssh/known_hosts
           chmod 600 ~/.ssh/known_hosts
 
+      - name: Debug cwd and scripts
+        run: |
+          pwd
+          ls -la
+          ls -la scripts || true
+
+      - name: Assert WEBROOT_DEV secret is set
+        run: |
+          if [ -z "${{ secrets.WEBROOT_DEV }}" ]; then
+            echo "WEBROOT_DEV secret is EMPTY — set it to an ABSOLUTE path like /home/<user>/dev.dynamicstatic.net/" >&2
+            exit 1
+          fi
+          echo "WEBROOT_DEV=${{ secrets.WEBROOT_DEV }}"
+
       - name: SSH preflight
         run: |
           ssh -i key_dev \
@@ -129,10 +143,11 @@ jobs:
             -p ${{ secrets.SSH_PORT_DEV || 22 }} \
             ${{ secrets.SSH_USER_DEV }}@${{ secrets.SSH_HOST_DEV }} 'echo OK'
 
-      - name: Deploy via safe-rsync (DRY-RUN)
-        run: |
-          chmod +x scripts/safe-rsync.sh
-          ./scripts/safe-rsync.sh
+      - name: Make safe-rsync executable
+        run: chmod +x ./scripts/safe-rsync.sh
+
+      - name: Run safe-rsync (DRY-RUN)
+        run: ./scripts/safe-rsync.sh
         env:
           KEY_FILE: key_dev
           USER: ${{ secrets.SSH_USER_DEV }}
