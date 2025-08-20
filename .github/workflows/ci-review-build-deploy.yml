@@ -129,16 +129,21 @@ jobs:
             -p ${{ secrets.SSH_PORT_DEV || 22 }} \
             ${{ secrets.SSH_USER_DEV }}@${{ secrets.SSH_HOST_DEV }} 'echo OK'
 
-      - name: Rsync to DEV webroot
+      - name: Deploy via safe-rsync (DRY-RUN)
         run: |
-          rsync -az --delete \
-            -e "ssh -i key_dev \
-              -o IdentitiesOnly=yes \
-              -o BatchMode=yes \
-              -o StrictHostKeyChecking=yes \
-              -o UserKnownHostsFile=~/.ssh/known_hosts \
-              -p ${{ secrets.SSH_PORT_DEV || 22 }}" \
-            dist/ ${{ secrets.SSH_USER_DEV }}@${{ secrets.SSH_HOST_DEV }}:${{ secrets.WEBROOT_DEV }}
+          chmod +x scripts/safe-rsync.sh
+          ./scripts/safe-rsync.sh
+        env:
+          KEY_FILE: key_dev
+          USER: ${{ secrets.SSH_USER_DEV }}
+          HOST: ${{ secrets.SSH_HOST_DEV }}
+          PORT: ${{ secrets.SSH_PORT_DEV || 22 }}
+          WEBROOT: ${{ secrets.WEBROOT_DEV }}
+          SRC_DIR: dist
+          EXPECT_TOKEN: dynamicstatic.net
+          MARKER_FILE: .allow-deploy
+          DRY_RUN: "yes"
+          DELETE: "no"
 
   # PROD guard: ensure the tag points to a commit that is on main
   verify-prod-tag:
@@ -197,13 +202,18 @@ jobs:
           echo "${{ secrets.SSH_KNOWN_HOSTS_PROD }}" >> ~/.ssh/known_hosts
           chmod 600 ~/.ssh/known_hosts
 
-      - name: Rsync to PROD webroot
+      - name: Deploy via safe-rsync (DRY-RUN)
         run: |
-          rsync -az --delete \
-            -e "ssh -i key_prod \
-              -o IdentitiesOnly=yes \
-              -o BatchMode=yes \
-              -o StrictHostKeyChecking=yes \
-              -o UserKnownHostsFile=~/.ssh/known_hosts \
-              -p ${{ secrets.SSH_PORT_PROD || 22 }}" \
-            dist/ ${{ secrets.SSH_USER_PROD }}@${{ secrets.SSH_HOST_PROD }}:${{ secrets.WEBROOT_PROD }}
+          chmod +x scripts/safe-rsync.sh
+          ./scripts/safe-rsync.sh
+        env:
+          KEY_FILE: key_prod
+          USER: ${{ secrets.SSH_USER_PROD }}
+          HOST: ${{ secrets.SSH_HOST_PROD }}
+          PORT: ${{ secrets.SSH_PORT_PROD || 22 }}
+          WEBROOT: ${{ secrets.WEBROOT_PROD }}
+          SRC_DIR: dist
+          EXPECT_TOKEN: dynamicstatic.net
+          MARKER_FILE: .allow-deploy
+          DRY_RUN: "yes"
+          DELETE: "no"
