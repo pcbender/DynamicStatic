@@ -34,11 +34,11 @@ jobs:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'npm'
 
-      - name: Install deps (app dir only)
-        run: npm ci --prefix DynamicStatic
+      - name: Install deps
+        run: npm ci
 
       - name: Verify review script
-        run: ls -la DynamicStatic/scripts && test -f DynamicStatic/scripts/ai-review.js
+        run: ls -la scripts && test -f scripts/ai-review.js
 
       - name: Run AI review
         id: aireview
@@ -47,7 +47,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           AI_REVIEW_MODE: ${{ env.AI_REVIEW_MODE }}
         run: |
-          node DynamicStatic/scripts/ai-review.js --mode "$AI_REVIEW_MODE" | tee review.out
+          node scripts/ai-review.js --mode "$AI_REVIEW_MODE" | tee review.out
           if grep -q "STATUS: OK" review.out; then
             echo "clean=true" >> $GITHUB_OUTPUT
           else
@@ -80,17 +80,17 @@ jobs:
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'npm'
-      - name: Install deps (app dir only)
-        run: npm ci --prefix DynamicStatic
+      - name: Install deps
+        run: npm ci
 
       - name: Build
-        run: npm run build:site --prefix DynamicStatic
+        run: npm run build:site
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
           name: site-dist
-          path: DynamicStatic/dist
+          path: dist
           if-no-files-found: error
 
   # DEV: push to develop branch
@@ -109,7 +109,7 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: site-dist
-          path: DynamicStatic/dist
+          path: dist
 
       - name: Write SSH key
         run: |
@@ -126,7 +126,7 @@ jobs:
         run: |
           rsync -az --delete \
             -e "ssh -i key_dev -p ${{ secrets.SSH_PORT_DEV || 22 }}" \
-            DynamicStatic/dist/ ${{ secrets.SSH_USER_DEV }}@${{ secrets.SSH_HOST_DEV }}:${{ secrets.WEBROOT_DEV }}
+            dist/ ${{ secrets.SSH_USER_DEV }}@${{ secrets.SSH_HOST_DEV }}:${{ secrets.WEBROOT_DEV }}
 
   # PROD guard: ensure the tag points to a commit that is on main
   verify-prod-tag:
@@ -172,7 +172,7 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: site-dist
-          path: DynamicStatic/dist
+          path: dist
 
       - name: Write SSH key
         run: |
@@ -189,4 +189,4 @@ jobs:
         run: |
           rsync -az --delete \
             -e "ssh -i key_prod -p ${{ secrets.SSH_PORT_PROD || 22 }}" \
-            DynamicStatic/dist/ ${{ secrets.SSH_USER_PROD }}@${{ secrets.SSH_HOST_PROD }}:${{ secrets.WEBROOT_PROD }}
+            dist/ ${{ secrets.SSH_USER_PROD }}@${{ secrets.SSH_HOST_PROD }}:${{ secrets.WEBROOT_PROD }}
