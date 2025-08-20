@@ -121,10 +121,23 @@ jobs:
           echo "${{ secrets.SSH_KNOWN_HOSTS_DEV }}" >> ~/.ssh/known_hosts
           chmod 600 ~/.ssh/known_hosts
 
+      - name: SSH preflight
+        run: |
+          ssh -i key_dev \
+            -o IdentitiesOnly=yes -o BatchMode=yes \
+            -o StrictHostKeyChecking=yes -o UserKnownHostsFile=~/.ssh/known_hosts \
+            -p ${{ secrets.SSH_PORT_DEV || 22 }} \
+            ${{ secrets.SSH_USER_DEV }}@${{ secrets.SSH_HOST_DEV }} 'echo OK'
+
       - name: Rsync to DEV webroot
         run: |
           rsync -az --delete \
-            -e "ssh -i key_dev -p ${{ secrets.SSH_PORT_DEV || 22 }}" \
+            -e "ssh -i key_dev \
+              -o IdentitiesOnly=yes \
+              -o BatchMode=yes \
+              -o StrictHostKeyChecking=yes \
+              -o UserKnownHostsFile=~/.ssh/known_hosts \
+              -p ${{ secrets.SSH_PORT_DEV || 22 }}" \
             dist/ ${{ secrets.SSH_USER_DEV }}@${{ secrets.SSH_HOST_DEV }}:${{ secrets.WEBROOT_DEV }}
 
   # PROD guard: ensure the tag points to a commit that is on main
@@ -187,5 +200,10 @@ jobs:
       - name: Rsync to PROD webroot
         run: |
           rsync -az --delete \
-            -e "ssh -i key_prod -p ${{ secrets.SSH_PORT_PROD || 22 }}" \
+            -e "ssh -i key_prod \
+              -o IdentitiesOnly=yes \
+              -o BatchMode=yes \
+              -o StrictHostKeyChecking=yes \
+              -o UserKnownHostsFile=~/.ssh/known_hosts \
+              -p ${{ secrets.SSH_PORT_PROD || 22 }}" \
             dist/ ${{ secrets.SSH_USER_PROD }}@${{ secrets.SSH_HOST_PROD }}:${{ secrets.WEBROOT_PROD }}
