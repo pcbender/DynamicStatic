@@ -104,6 +104,9 @@ jobs:
       name: dev
       url: https://dev.dynamicstatic.net/
     steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
       - name: Download artifact
         uses: actions/download-artifact@v4
         with:
@@ -200,6 +203,9 @@ jobs:
       name: production
       url: https://dynamicstatic.net/
     steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
       - name: Download artifact
         uses: actions/download-artifact@v4
         with:
@@ -217,10 +223,25 @@ jobs:
           echo "${{ secrets.SSH_KNOWN_HOSTS_PROD }}" >> ~/.ssh/known_hosts
           chmod 600 ~/.ssh/known_hosts
 
-      - name: Deploy via safe-rsync (DRY-RUN)
+      - name: Debug cwd and scripts
         run: |
-          chmod +x scripts/safe-rsync.sh
-          ./scripts/safe-rsync.sh
+          pwd
+          ls -la
+          ls -la scripts || true
+
+      - name: Assert WEBROOT_PROD secret is set
+        run: |
+          if [ -z "${{ secrets.WEBROOT_PROD }}" ]; then
+            echo "WEBROOT_PROD secret is EMPTY — set it to an ABSOLUTE path like /home/<user>/dynamicstatic.net/" >&2
+            exit 1
+          fi
+          echo "WEBROOT_PROD=${{ secrets.WEBROOT_PROD }}"
+
+      - name: Make safe-rsync executable
+        run: chmod +x ./scripts/safe-rsync.sh
+
+      - name: Run safe-rsync (DRY-RUN)
+        run: ./scripts/safe-rsync.sh
         env:
           KEY_FILE: key_prod
           USER: ${{ secrets.SSH_USER_PROD }}
