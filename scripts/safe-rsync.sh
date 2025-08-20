@@ -23,16 +23,22 @@ die(){ echo "ABORT: $*" >&2; exit 1; }
 [[ "$WEBROOT" != "/" ]] || die "WEBROOT cannot be /"
 [[ "$WEBROOT" == *"$EXPECT_TOKEN"* ]] || die "WEBROOT must include token: $EXPECT_TOKEN"
 
+# Ensure .htaccess presence if expected (improves cache/security behavior)
+if [[ -f "public/.htaccess" && ! -f "$SRC_DIR/.htaccess" ]]; then
+  die ".htaccess expected (public/.htaccess exists) but missing in $SRC_DIR/. Did you run npm run build:site?"
+fi
+
 # SSH options (known_hosts must be pre-populated by workflow)
 SSH_OPTS=( -i "$KEY_FILE" -o IdentitiesOnly=yes -o BatchMode=yes \
   -o StrictHostKeyChecking=yes -o UserKnownHostsFile="$HOME/.ssh/known_hosts" -p "$PORT" )
 
-# Remote preflight: path exists, not $HOME, marker present
+# Remote preflight: path exists, not $HOME, marker & .htaccess present (warn if missing)
 ssh "${SSH_OPTS[@]}" "$USER@$HOST" "set -e;
   test -d '$WEBROOT';
   test \"$HOME\" != '$WEBROOT';
   test '/' != '$WEBROOT';
-  test -f '$WEBROOT/$MARKER_FILE'"
+  test -f '$WEBROOT/$MARKER_FILE';
+  test -f '$WEBROOT/.htaccess' || echo '[warn] .htaccess not found in webroot'"
 
 # Compose rsync
 RSYNC_OPTS=( -a -v --human-readable --chmod=Du=rwx,Dgo=rx,Fu=rw,Fgo=r )

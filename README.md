@@ -220,6 +220,19 @@ The `dist/` directory can be deployed to any static hosting service:
 - Vercel
 - AWS S3 + CloudFront
 
+#### HTTP Cache & Security Headers (.htaccess)
+
+During `npm run build:site` the file `public/.htaccess` is copied to `dist/.htaccess`. This file applies:
+
+- Cache busting for `sw.js` and `data/manifest.json` (no-store, must-revalidate)
+- Long-lived immutable caching for other `data/*.json` payloads (1 year)
+- Explicit JSON / web manifest MIME types
+- Security headers: `X-Content-Type-Options`, `Referrer-Policy`, `X-Frame-Options`, `Permissions-Policy`
+
+If you host on Apache, ensure `.htaccess` processing is enabled. For Nginx or other platforms, port these rules into your server config (example Nginx mapping: add `add_header` directives inside a `location /data/` block and a separate `location = /sw.js`).
+
+The deploy safety script (`scripts/safe-rsync.sh`) requires that `.htaccess` exists in `dist/` (when present in `public/`) to avoid pushing a build missing critical cache headers.
+
 ### PHP Backend
 Deploy the `Weaver/` directory to any PHP hosting service with:
 - PHP 8.0+ support

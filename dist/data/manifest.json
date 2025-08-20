@@ -1,0 +1,11 @@
+{
+  "generatedAt": "2025-08-20T12:55:38.463Z",
+  "version": "42a73c9f02dd72b8878708dbf7d79ee3a93d59b8420e8c258ea8b4a0cc129bcc",
+  "files": {
+    "articles.json": "0f102a04e9a365c581948478bfee38503f383c36b25166a3b57dd8cd59b588f1",
+    "features.json": "774470c3d6f5b8cfd16cf91fb462e033dc42b897eefdb6d4d9101353961bd60c",
+    "footer.json": "9d6eed16293c9dad86593fbfb552d3914ec95d0f53a37f8f2b95f702d84dbf3e",
+    "menu.json": "1642d9019ff60538a162399397147e36d31e6eae66a6e1cb1234b3343eba6b4b",
+    "recentUpdates.json": "a50a93237630ea27673c739ed5faa3a48e4cf8cb7063db086df9945489c6d5ef"
+  }
+}

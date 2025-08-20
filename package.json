@@ -7,7 +7,7 @@
     "node": ">=20"
   },
   "scripts": {
-    "build:site": "node scripts/build.js",
+  "build:site": "node scripts/build.js && node scripts/gen-manifest.js",
     "ai-review": "node scripts/ai-review.js"
   },
   "dependencies": {

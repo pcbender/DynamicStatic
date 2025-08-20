@@ -146,6 +146,13 @@
         <div class="footer-bottom" x-data="{currentYear: new Date().getFullYear()}">
             <p>&copy; <span x-text="currentYear"></span> Relational Design. All rights reserved.</p>
         </div>
-    </footer>
-</body>
-</html>
+     </footer>
+        <script>
+            if ('serviceWorker' in navigator) {
+                window.addEventListener('load', () => {
+                    navigator.serviceWorker.register('sw.js').catch(err => console.error('SW registration failed', err));
+                });
+            }
+        </script>
+    </body>
+    </html>

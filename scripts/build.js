@@ -84,6 +84,17 @@ function updateRelatedArticles(articles, topN = 5) {
 
 function main() {
 	const dataPath = path.join(process.cwd(), 'dist', 'data', 'articles.json');
+	// Ensure .htaccess is copied to dist root (for Apache headers / cache control)
+	try {
+		const htSrc = path.join(process.cwd(), 'public', '.htaccess');
+		if (fs.existsSync(htSrc)) {
+			const htDest = path.join(process.cwd(), 'dist', '.htaccess');
+			fs.copyFileSync(htSrc, htDest);
+			console.log('Copied .htaccess to dist/.htaccess');
+		}
+	} catch (e) {
+		console.warn('Warning: failed to copy .htaccess', e.message);
+	}
 	if (!fs.existsSync(dataPath)) {
 		console.error('articles.json not found at', dataPath);
 		process.exit(1);
