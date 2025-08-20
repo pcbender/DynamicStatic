@@ -164,8 +164,27 @@ jobs:
       - name: Make safe-rsync executable
         run: chmod +x ./scripts/safe-rsync.sh
 
-      - name: Run safe-rsync (DRY-RUN)
-        run: ./scripts/safe-rsync.sh
+      - name: Local dist sanity
+        run: |
+          pwd
+          ls -la
+          test -d dist && echo "dist/ exists" || (echo "dist/ missing" && exit 1)
+          find dist -maxdepth 2 -type f | head -50
+
+      - name: Remote preflight diagnostics
+        run: |
+          set -euo pipefail
+          SSH_OPTS="-i key_dev -o IdentitiesOnly=yes -o BatchMode=yes -o StrictHostKeyChecking=yes -o UserKnownHostsFile=$HOME/.ssh/known_hosts -p ${{ secrets.SSH_PORT_DEV || 22 }}"
+          echo "WEBROOT=${{ secrets.WEBROOT_DEV }}"
+          ssh $SSH_OPTS ${{ secrets.SSH_USER_DEV }}@${{ secrets.SSH_HOST_DEV }} "set -euxo pipefail; \
+            echo HOME=\$HOME; \
+            test -d '${{ secrets.WEBROOT_DEV }}' && echo 'dir OK'; \
+            test \"\$HOME\" != '${{ secrets.WEBROOT_DEV }}' && echo 'not HOME OK'; \
+            test '/' != '${{ secrets.WEBROOT_DEV }}' && echo 'not ROOT OK'; \
+            test -f '${{ secrets.WEBROOT_DEV }}/.allow-deploy' && echo 'marker OK' || (echo 'marker MISSING' && false)"
+
+      - name: Run safe-rsync (DRY-RUN, traced)
+        run: bash -x ./scripts/safe-rsync.sh
         env:
           KEY_FILE: key_dev
           USER: ${{ secrets.SSH_USER_DEV }}

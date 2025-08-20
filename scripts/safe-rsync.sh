@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
-set -euo pipefail
+set -eEuo pipefail
+trap 'echo "safe-rsync: FAIL at line $LINENO running: $BASH_COMMAND" >&2' ERR
 
 # Inputs (required)
 KEY_FILE="${KEY_FILE:?missing KEY_FILE}"
