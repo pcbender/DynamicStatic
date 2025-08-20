@@ -19,7 +19,6 @@ concurrency:
 env:
   NODE_VERSION: '20'
   AI_REVIEW_MODE: 'light' # switch to 'deep' on main if desired
-  AI_REVIEW_SCRIPT: scripts/ai-review.js
 
 jobs:
   ai-review:
