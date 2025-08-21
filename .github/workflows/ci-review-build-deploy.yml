@@ -285,5 +285,5 @@ jobs:
           SRC_DIR: dist
           EXPECT_TOKEN: dynamicstatic.net
           MARKER_FILE: .allow-deploy
-          DRY_RUN: "yes"
+          DRY_RUN: "no"
           DELETE: "no"
