@@ -194,7 +194,7 @@ jobs:
           SRC_DIR: dist
           EXPECT_TOKEN: dynamicstatic.net
           MARKER_FILE: .allow-deploy
-          DRY_RUN: "yes"
+          DRY_RUN: "no"
           DELETE: "no"
 
   # PROD guard: ensure the tag points to a commit that is on main
